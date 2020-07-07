@@ -1,0 +1,2 @@
+include ':app', ':alpha_player'
+rootProject.name='AlphaVideoPlayer'
