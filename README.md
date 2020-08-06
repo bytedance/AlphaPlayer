@@ -36,8 +36,15 @@ AlphaPlayer是直播中台使用的一个视频动画特效SDK，可以通过制
 ##### 添加依赖
 
 ```kotlin
+allprojects {
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+}
+
 dependencies {
-  implementation "xxx:1.0.0"
+    implementation 'com.github.bytedance:AlphaPlayer:1.0'
 }
 ```
 
