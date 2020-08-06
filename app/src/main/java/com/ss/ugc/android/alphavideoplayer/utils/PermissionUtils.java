@@ -6,7 +6,6 @@ import android.support.v4.app.ActivityCompat;
 
 /**
  * Created by bstonl on 2018/9/20.
- * email:dengjiangjun@bytedance.com
  */
 public class PermissionUtils {
 

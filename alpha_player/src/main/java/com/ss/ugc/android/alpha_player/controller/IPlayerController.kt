@@ -1,6 +1,5 @@
 package com.ss.ugc.android.alpha_player.controller
 
-import android.opengl.Visibility
 import android.view.View
 import android.view.ViewGroup
 import com.ss.ugc.android.alpha_player.IMonitor
