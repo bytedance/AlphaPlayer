@@ -2,7 +2,7 @@
 
 > Powered by ByteDance Live Android team.
 
-AlphaPlayer是直播中台使用的一个动画特效库，可以通过制作Alpha通道分离的视频素材，再在客户端上通过OpenGL ES重新实现Alpha通道和RGB通道的混合，从而实现在端上播放带透明通道的视频。
+AlphaPlayer是直播中台使用的一个视频动画特效SDK，可以通过制作Alpha通道分离的视频素材，再在客户端上通过OpenGL ES重新实现Alpha通道和RGB通道的混合，从而实现在端上播放带透明通道的视频。
 
 这套方案对设计师而言明显降低了特效的制作成本，对于客户端而言有着更可靠的性能和稳定性，且相比cocos2d引擎有着更低的入门门槛和维护成本，为复杂动画的实现提供了一种全新的方式，新的复杂动画开发将会变得更加简单高效。
 
@@ -91,12 +91,14 @@ fun releasePlayerController() {
 
 ### 已知接入方
 
-抖火西头
+| ![douyin](./image/douyin.png) | ![douyin](./image/tiktok.png) | ![douyin](./image/hotsoon.png) | ![douyin](./image/xigua.png) | ![douyin](./image/toutiao.png) |
+| :---------------------------: | :---------------------------: | :----------------------------: | :--------------------------: | :----------------------------: |
+|             抖音              |            Tiktok             |           抖音火山版           |          西瓜小视频          |            今日头条            |
 
-皮皮虾、懂车帝
+### 联系我们
 
-TikTok、Helo
+如果你有任何关于AlphaPlayer的问题或建议，可以发邮件到邮箱：dengzhuoyao@bytedance.com, 在邮件中详细描述你的问题。
 
-### Contribution & 联系我们
+### License
 
-TODO:
+Apache 2.0
