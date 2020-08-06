@@ -27,10 +27,6 @@ AlphaPlayer是直播中台使用的一个视频动画特效SDK，可以通过制
 
 ![demo](./image/demo.gif)
 
-### 项目结构
-
-主要有两个核心部分，一个是MediaPlayer，负责视频每一帧的解码，支持接入方自行实现；另一个是VideoRenderer，负责将解析出来的每一帧画面进行alpha通道混合，再输出到GLSurfaceView上。
-
 ### 快速接入
 
 ##### 添加依赖
@@ -99,6 +95,36 @@ fun releasePlayerController() {
   playerController.release()
 }
 ```
+
+### 高级特性
+
+#### 动画对齐方式
+
+为了解决不同屏幕尺寸的兼容问题和支持半屏动画视频的指定位置播放，我们提供了多种视频裁剪对齐方式，详细可见`ScaleType.kt`。
+
+| 对齐模式             | 描述                                       |
+| -------------------- | ------------------------------------------ |
+| ScaleToFill          | 拉伸铺满全屏                               |
+| ScaleAspectFitCenter | 等比例缩放对齐全屏，居中，屏幕多余部分留空 |
+| ScaleAspectFill      | 等比例缩放铺满全屏，居中，裁剪视频多余部分 |
+| TopFill              | 等比例缩放铺满全屏，顶部对齐               |
+| BottomFill           | 等比例缩放铺满全屏，底部对齐               |
+| LeftFill             | 等比例缩放铺满全屏，左边对齐               |
+| RightFill            | 等比例缩放铺满全屏，右边对齐               |
+| TopFit               | 等比例缩放至屏幕宽度，顶部对齐，底部留空   |
+| BottomFit            | 等比例缩放至屏幕宽度，底部对齐，顶部留空   |
+| LeftFit              | 等比例缩放至屏幕高度，左边对齐，右边留空   |
+| RightFit             | 等比例缩放至屏幕高度，右边对齐，左边留空   |
+
+#### Alpha通道压缩方案
+
+为了进一步减少视频动画文件的体积，我们做了很多方向的尝试，包括透明画面像素点冗余channel的复用和整体尺寸压缩，可以期待后续更新。
+
+### 项目结构&基本原理
+
+主要有两个核心部分，一个是MediaPlayer，负责视频每一帧的解码，支持接入方自行实现；另一个是VideoRenderer，负责将解析出来的每一帧画面进行alpha通道混合，再输出到Surface上。View使用的是GLSurfaceView，性能相对TextureView更优，但层级限制在最顶层。
+
+AlphaPlayer内部是通过Render渲染纹理画面的，设计师导出的视频资源会包含两部分内容——透明遮罩画面和原视频画面两部分，然后通过shader进行alpha值的混合，详细可以看 `frag.sh`和`vertex.sh`。
 
 ### 已知接入方
 
