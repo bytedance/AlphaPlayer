@@ -23,6 +23,10 @@ AlphaPlayer是直播中台使用的一个视频动画特效SDK，可以通过制
 | cocos2d引擎 | 实现成本高                           | 高       | 较高               | 较高     |
 | AlphaPlayer | 开发无任何实现成本，一次接入永久使用 | 低       | 高                 | 低       |
 
+### 运行效果
+
+![demo](./image/demo.gif)
+
 ### 项目结构
 
 主要有两个核心部分，一个是MediaPlayer，负责视频每一帧的解码，支持接入方自行实现；另一个是VideoRenderer，负责将解析出来的每一帧画面进行alpha通道混合，再输出到GLSurfaceView上。
@@ -72,8 +76,8 @@ fun startVideoAnimation() {
   val landscapeFileName = "landscape.mp4"
   val landscapeScaleType = 2
   val dataSource = DataSource().setBaseDir(baseDir)
-  														.setPortraitPath(portraitFileName, portraitScaleType)
-  														.setLandscapePath(landscapeFileName, landscapeScaleType)
+    .setPortraitPath(portraitFileName, portraitScaleType)
+    .setLandscapePath(landscapeFileName, landscapeScaleType)
   if (dataSource.isValid()) {
     playerController.start(dataSource)
   }
