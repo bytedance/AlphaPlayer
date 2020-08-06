@@ -128,9 +128,9 @@ AlphaPlayer内部是通过Render渲染纹理画面的，设计师导出的视频
 
 ### 已知接入方
 
-| ![douyin](./image/douyin.png) | ![douyin](./image/tiktok.png) | ![douyin](./image/hotsoon.png) | ![douyin](./image/xigua.png) | ![douyin](./image/toutiao.png) |
-| :---------------------------: | :---------------------------: | :----------------------------: | :--------------------------: | :----------------------------: |
-|             抖音              |            Tiktok             |           抖音火山版           |          西瓜小视频          |            今日头条            |
+| ![douyin](./image/douyin.png) | ![douyin](./image/hotsoon.png) | ![douyin](./image/xigua.png) | ![douyin](./image/toutiao.png) |
+| :---------------------------: | :----------------------------: | :--------------------------: | :----------------------------: |
+|             抖音              |           抖音火山版           |          西瓜小视频          |            今日头条            |
 
 ### 联系我们
 
