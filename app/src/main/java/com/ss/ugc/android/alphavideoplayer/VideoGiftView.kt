@@ -45,8 +45,10 @@ class VideoGiftView @JvmOverloads constructor(
 
     fun initPlayerController(context: Context, owner: LifecycleOwner, playerAction: IPlayerAction, monitor: IMonitor) {
         val configuration = Configuration(context, owner)
-//        configuration.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
-//        mPlayerController = PlayerController.get(configuration, DefaultSystemPlayer())
+        //  GLTextureView supports custom display layer, but GLSurfaceView has better performance, and the GLSurfaceView is default.
+        configuration.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
+        //  You can implement your IMediaPlayer, here we use ExoPlayerImpl that implemented by ExoPlayer, and
+        //  we support DefaultSystemPlayer as default player.
         mPlayerController = PlayerController.get(configuration, ExoPlayerImpl(context))
         mPlayerController!!.setPlayerAction(playerAction)
         mPlayerController!!.setMonitor(monitor)

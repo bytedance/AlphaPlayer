@@ -48,7 +48,10 @@ dependencies {
 
 ```kotlin
 val config = Configuration(context, lifecycleOwner)
-val playerController = PlayerController.get(config, DefaultSystemPlayer())	// 也可以设置自行实现的Player, demo中提供了基于ExoPlayer的实现
+// 支持GLSurfaceView&GLTextureView, 默认使用GLSurfaceView
+config.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
+// 也可以设置自行实现的Player, demo中提供了基于ExoPlayer的实现
+val playerController = PlayerController.get(config, DefaultSystemPlayer())	
 playerController.setPlayerAction(object: IPlayerAction {
   override fun onVideoSizeChanged(videoWidth: Int, videoHeight: Int, scaleType: ScaleType) {
   }
