@@ -18,6 +18,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.ss.ugc.android.alpha_player.IMonitor
 import com.ss.ugc.android.alpha_player.IPlayerAction
+import com.ss.ugc.android.alpha_player.model.AlphaVideoViewType
 import com.ss.ugc.android.alpha_player.model.Configuration
 import com.ss.ugc.android.alpha_player.model.DataSource
 import com.ss.ugc.android.alpha_player.player.DefaultSystemPlayer
@@ -33,7 +34,7 @@ import java.lang.Exception
 /**
  * created by dengzhuoyao on 2020/07/08
  */
-class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
+class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
 
     companion object {
         val INIT_MEDIA_PLAYER: Int = 1
@@ -48,6 +49,7 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
 
         fun get(configuration: Configuration, mediaPlayer: IMediaPlayer? = null): PlayerController {
             return PlayerController(configuration.context, configuration.lifecycleOwner,
+                configuration.alphaVideoViewType,
                 mediaPlayer ?: DefaultSystemPlayer())
         }
     }
@@ -93,7 +95,10 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
     }
 
     private fun initAlphaView() {
-        alphaVideoView = AlphaVideoGLSurfaceView(context, null)
+        alphaVideoView = when(alphaVideoViewType) {
+            AlphaVideoViewType.GL_SURFACE_VIEW -> AlphaVideoGLSurfaceView(context, null)
+            AlphaVideoViewType.GL_TEXTURE_VIEW -> AlphaVideoGLTextureView(context, null)
+        }
         alphaVideoView.let {
             val layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

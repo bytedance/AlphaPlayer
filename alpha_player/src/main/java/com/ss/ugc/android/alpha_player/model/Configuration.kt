@@ -8,4 +8,9 @@ import android.content.Context
  */
 class Configuration(var context: Context,
                     var lifecycleOwner: LifecycleOwner) {
+    var alphaVideoViewType: AlphaVideoViewType = AlphaVideoViewType.GL_SURFACE_VIEW
+}
+
+enum class AlphaVideoViewType {
+    GL_TEXTURE_VIEW, GL_SURFACE_VIEW
 }

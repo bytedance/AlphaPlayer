@@ -8,10 +8,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.widget.FrameLayout
 import android.widget.RelativeLayout
+import android.widget.Toast
 import com.ss.ugc.android.alpha_player.IMonitor
 import com.ss.ugc.android.alpha_player.IPlayerAction
 import com.ss.ugc.android.alpha_player.controller.IPlayerController
 import com.ss.ugc.android.alpha_player.controller.PlayerController
+import com.ss.ugc.android.alpha_player.model.AlphaVideoViewType
 import com.ss.ugc.android.alpha_player.model.Configuration
 import com.ss.ugc.android.alpha_player.model.DataSource
 import com.ss.ugc.android.alpha_player.player.DefaultSystemPlayer
@@ -43,6 +45,7 @@ class VideoGiftView @JvmOverloads constructor(
 
     fun initPlayerController(context: Context, owner: LifecycleOwner, playerAction: IPlayerAction, monitor: IMonitor) {
         val configuration = Configuration(context, owner)
+//        configuration.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
 //        mPlayerController = PlayerController.get(configuration, DefaultSystemPlayer())
         mPlayerController = PlayerController.get(configuration, ExoPlayerImpl(context))
         mPlayerController!!.setPlayerAction(playerAction)
@@ -70,10 +73,12 @@ class VideoGiftView @JvmOverloads constructor(
 
     fun attachView() {
         mPlayerController?.attachAlphaView(mVideoContainer)
+        Toast.makeText(context, "attach alphaVideoView", Toast.LENGTH_SHORT).show()
     }
 
     fun detachView() {
         mPlayerController?.detachAlphaView(mVideoContainer)
+        Toast.makeText(context, "detach alphaVideoView", Toast.LENGTH_SHORT).show()
     }
 
     fun releasePlayerController() {
