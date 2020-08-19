@@ -2,7 +2,6 @@ package com.ss.ugc.android.alpha_player.render
 
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
-import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.Build
 import android.util.Log
@@ -10,6 +9,7 @@ import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.utils.ShaderUtil
 import com.ss.ugc.android.alpha_player.utils.TextureCropUtil
+import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
 import java.lang.Exception
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -21,7 +21,7 @@ import javax.microedition.khronos.opengles.GL10
 /**
  * created by dengzhuoyao on 2020/07/07
  */
-class VideoRenderer(glSurfaceView: GLSurfaceView) : IRender {
+class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
     private val TAG = "VideoRender"
 
@@ -67,7 +67,6 @@ class VideoRenderer(glSurfaceView: GLSurfaceView) : IRender {
 
     private var surfaceTexture: SurfaceTexture? = null
     private var surfaceListener: IRender.SurfaceListener? = null
-    private var glSurfaceView: GLSurfaceView? = glSurfaceView
     private var scaleType = ScaleType.ScaleAspectFill
 
     init {
@@ -186,6 +185,10 @@ class VideoRenderer(glSurfaceView: GLSurfaceView) : IRender {
         prepareSurface()
     }
 
+    override fun onSurfaceDestroyed(gl: GL10?) {
+        surfaceListener?.onSurfaceDestroyed()
+    }
+
     private fun prepareSurface() {
         val textures = IntArray(1)
         GLES20.glGenTextures(1, textures, 0)
@@ -206,8 +209,8 @@ class VideoRenderer(glSurfaceView: GLSurfaceView) : IRender {
         surfaceTexture = SurfaceTexture(textureID)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
             surfaceTexture!!.setDefaultBufferSize(
-                glSurfaceView!!.measuredWidth,
-                glSurfaceView!!.measuredHeight
+                alphaVideoView.getMeasuredWidth(),
+                alphaVideoView.getMeasuredHeight()
             )
         }
         surfaceTexture!!.setOnFrameAvailableListener(this)
@@ -221,19 +224,19 @@ class VideoRenderer(glSurfaceView: GLSurfaceView) : IRender {
 
     override fun onFrameAvailable(surface: SurfaceTexture) {
         updateSurface.compareAndSet(false, true)
-        glSurfaceView!!.requestRender()
+        alphaVideoView.requestRender()
     }
 
     override fun onFirstFrame() {
         canDraw.compareAndSet(false, true)
         Log.i(TAG, "onFirstFrame:    canDraw = " + canDraw.get())
-        glSurfaceView!!.requestRender()
+        alphaVideoView.requestRender()
     }
 
     override fun onCompletion() {
         canDraw.compareAndSet(true, false)
         Log.i(TAG, "onCompletion:   canDraw = " + canDraw.get())
-        glSurfaceView!!.requestRender()
+        alphaVideoView.requestRender()
     }
 
     /**
@@ -270,8 +273,8 @@ class VideoRenderer(glSurfaceView: GLSurfaceView) : IRender {
      * @return programID If link program success, it will return program handle, else return 0.
      */
     private fun createProgram(): Int {
-        val vertexSource = ShaderUtil.loadFromAssetsFile("vertex.sh", glSurfaceView!!.resources)
-        val fragmentSource = ShaderUtil.loadFromAssetsFile("frag.sh", glSurfaceView!!.resources)
+        val vertexSource = ShaderUtil.loadFromAssetsFile("vertex.sh", alphaVideoView.getView().resources)
+        val fragmentSource = ShaderUtil.loadFromAssetsFile("frag.sh", alphaVideoView.getView().resources)
 
         val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
         if (vertexShader == 0) {

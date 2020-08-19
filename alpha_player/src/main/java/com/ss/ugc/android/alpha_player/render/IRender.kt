@@ -4,13 +4,14 @@ import android.graphics.SurfaceTexture
 import android.opengl.GLSurfaceView
 import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.ScaleType
+import com.ss.ugc.android.alpha_player.widget.GLTextureView
 
 /**
  * created by dengzhuoyao on 2020/07/07
  *
  *  A generic renderer with opengles interface.
  */
-interface IRender : GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
+interface IRender : GLTextureView.Renderer, GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
 
     fun setSurfaceListener(surfaceListener: SurfaceListener)
 

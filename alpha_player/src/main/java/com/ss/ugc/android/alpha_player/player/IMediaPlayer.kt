@@ -3,7 +3,6 @@ package com.ss.ugc.android.alpha_player.player
 import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.VideoInfo
 import java.io.IOException
-import java.lang.Exception
 
 /**
  * created by dengzhuoyao on 2020/07/07
@@ -36,6 +35,7 @@ interface IMediaPlayer {
     /**
      * Maybe will init mediaPlayer on sub thread.
      */
+    @Throws(Exception::class)
     fun initMediaPlayer()
 
     /**

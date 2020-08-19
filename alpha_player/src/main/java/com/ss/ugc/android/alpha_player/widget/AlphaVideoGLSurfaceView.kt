@@ -5,6 +5,8 @@ import android.graphics.PixelFormat
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.view.Surface
+import android.view.View
+import android.view.ViewGroup
 import com.ss.ugc.android.alpha_player.controller.IPlayerControllerExt
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.render.IRender
@@ -12,13 +14,16 @@ import com.ss.ugc.android.alpha_player.render.IRender
 /**
  * created by dengzhuoyao on 2020/07/07
  */
-class AlphaVideoView @JvmOverloads constructor(context: Context, attr: AttributeSet? = null)
-    : GLSurfaceView(context, attr) {
+class AlphaVideoGLSurfaceView @JvmOverloads constructor(context: Context, attr: AttributeSet? = null)
+    : GLSurfaceView(context, attr), IAlphaVideoView {
 
     val GL_CONTEXT_VERSION = 2
 
     @Volatile
-    var isSurfaceCreated: Boolean = false
+    private var isSurfaceCreated: Boolean = false
+    override fun isSurfaceCreated(): Boolean {
+        return isSurfaceCreated
+    }
 
     var mVideoWidth: Float = 0f
     var mVideoHeight: Float = 0f
@@ -28,7 +33,7 @@ class AlphaVideoView @JvmOverloads constructor(context: Context, attr: Attribute
     var mPlayerController: IPlayerControllerExt? = null
     var mSurface: Surface? = null
 
-    val mSurfaceListener = object: IRender.SurfaceListener {
+    private val mSurfaceListener = object: IRender.SurfaceListener {
         override fun onSurfacePrepared(surface: Surface) {
             mSurface?.release()
             mSurface = surface
@@ -57,23 +62,44 @@ class AlphaVideoView @JvmOverloads constructor(context: Context, attr: Attribute
         mRenderer?.setSurfaceListener(mSurfaceListener)
     }
 
-    fun setPlayerController(playerController: IPlayerControllerExt) {
+    override fun addParentView(parentView: ViewGroup) {
+        if (parentView.indexOfChild(this) == -1) {
+            this.parent?.let {
+                (it as ViewGroup).removeView(this)
+            }
+            parentView.addView(this)
+        }
+    }
+
+    override fun removeParentView(parentView: ViewGroup) {
+        parentView.removeView(this)
+    }
+
+    override fun getView(): View {
+        return this
+    }
+
+    override fun setPlayerController(playerController: IPlayerControllerExt) {
         this.mPlayerController = playerController
     }
 
-    fun setVideoRenderer(renderer: IRender) {
+    override fun setVideoRenderer(renderer: IRender) {
         this.mRenderer = renderer
         setRenderer(renderer)
         addOnSurfacePreparedListener()
         renderMode = RENDERMODE_WHEN_DIRTY
     }
 
-    fun setScaleType(scaleType: ScaleType) {
+    override fun setScaleType(scaleType: ScaleType) {
         this.mScaleType = scaleType
         mRenderer?.setScaleType(scaleType)
     }
 
-    fun measureInternal(videoWidth: Float, videoHeight: Float) {
+    override fun getScaleType(): ScaleType {
+        return mScaleType
+    }
+
+    override fun measureInternal(videoWidth: Float, videoHeight: Float) {
         if (videoWidth > 0 && videoHeight > 0) {
             mVideoWidth = videoWidth
             mVideoHeight = videoHeight
@@ -87,11 +113,11 @@ class AlphaVideoView @JvmOverloads constructor(context: Context, attr: Attribute
         }
     }
 
-    fun onFirstFrame() {
+    override fun onFirstFrame() {
         mRenderer?.onFirstFrame()
     }
 
-    fun onCompletion() {
+    override fun onCompletion() {
         mRenderer?.onCompletion()
     }
 
@@ -100,7 +126,7 @@ class AlphaVideoView @JvmOverloads constructor(context: Context, attr: Attribute
         measureInternal(mVideoWidth, mVideoHeight)
     }
 
-    fun release() {
+    override fun release() {
         mSurfaceListener.onSurfaceDestroyed()
     }
 }

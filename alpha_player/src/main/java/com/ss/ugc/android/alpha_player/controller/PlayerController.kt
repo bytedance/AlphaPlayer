@@ -24,7 +24,9 @@ import com.ss.ugc.android.alpha_player.player.DefaultSystemPlayer
 import com.ss.ugc.android.alpha_player.player.IMediaPlayer
 import com.ss.ugc.android.alpha_player.player.PlayerState
 import com.ss.ugc.android.alpha_player.render.VideoRenderer
-import com.ss.ugc.android.alpha_player.widget.AlphaVideoView
+import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLSurfaceView
+import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLTextureView
+import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
 import java.io.File
 import java.lang.Exception
 
@@ -55,8 +57,8 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
     val context: Context
     var mMonitor: IMonitor? = null
     var mPlayerAction: IPlayerAction? = null
-    val mediaPlayer: IMediaPlayer
-    var alphaVideoView: AlphaVideoView? = null
+    var mediaPlayer: IMediaPlayer
+    lateinit var alphaVideoView: IAlphaVideoView
 
     var workHandler: Handler? = null
     val mainHandler: Handler = Handler(Looper.getMainLooper())
@@ -91,12 +93,12 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
     }
 
     private fun initAlphaView() {
-        alphaVideoView = AlphaVideoView(context, null)
-        alphaVideoView!!.let {
+        alphaVideoView = AlphaVideoGLSurfaceView(context, null)
+        alphaVideoView.let {
             val layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT)
-            it.layoutParams = layoutParams
+            it.setLayoutParams(layoutParams)
             it.setPlayerController(this)
             it.setVideoRenderer(VideoRenderer(it))
         }
@@ -115,23 +117,18 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
     }
 
     override fun setVisibility(visibility: Int) {
-        alphaVideoView!!.visibility = visibility
+        alphaVideoView.setVisibility(visibility)
         if (visibility == View.VISIBLE) {
-            alphaVideoView!!.bringToFront()
+            alphaVideoView.bringToFront()
         }
     }
 
     override fun attachAlphaView(parentView: ViewGroup) {
-        if (parentView.indexOfChild(alphaVideoView) == -1) {
-            alphaVideoView!!.parent?.let {
-                (it as ViewGroup).removeView(alphaVideoView)
-            }
-            parentView.addView(alphaVideoView)
-        }
+        alphaVideoView.addParentView(parentView)
     }
 
     override fun detachAlphaView(parentView: ViewGroup) {
-        parentView.removeView(alphaVideoView)
+        alphaVideoView.removeParentView(parentView)
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -207,7 +204,7 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
     }
 
     override fun getView(): View {
-        return alphaVideoView!!
+        return alphaVideoView.getView()
     }
 
     override fun getPlayerType(): String {
@@ -216,18 +213,24 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
 
     @WorkerThread
     private fun initPlayer() {
-        mediaPlayer.initMediaPlayer()
+        try {
+            mediaPlayer.initMediaPlayer()
+        } catch (e: Exception) {
+            mediaPlayer = DefaultSystemPlayer()
+            mediaPlayer.initMediaPlayer()
+            // TODO: add log
+        }
         mediaPlayer.setScreenOnWhilePlaying(true)
         mediaPlayer.setLooping(false)
 
         mediaPlayer.setOnFirstFrameListener(object : IMediaPlayer.OnFirstFrameListener {
             override fun onFirstFrame() {
-                alphaVideoView!!.onFirstFrame()
+                alphaVideoView.onFirstFrame()
             }
         })
         mediaPlayer.setOnCompletionListener(object : IMediaPlayer.OnCompletionListener {
             override fun onCompletion() {
-                alphaVideoView!!.onCompletion()
+                alphaVideoView.onCompletion()
                 playerState = PlayerState.PAUSED
                 monitor(true, errorInfo = "")
                 emitEndSignal()
@@ -260,17 +263,17 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
             return
         }
         scaleType?.let {
-            alphaVideoView!!.setScaleType(it)
+            alphaVideoView.setScaleType(it)
         }
         mediaPlayer.setDataSource(dataPath)
-        if (alphaVideoView!!.isSurfaceCreated) {
+        if (alphaVideoView.isSurfaceCreated()) {
             prepareAsync()
         }
     }
 
     @WorkerThread
     private fun prepareAsync() {
-        mediaPlayer?.let {
+        mediaPlayer.let {
             if (playerState == PlayerState.NOT_PREPARED || playerState == PlayerState.STOPPED) {
                 it.setOnPreparedListener(mPreparedListener)
                 it.setOnErrorListener(mErrorListener)
@@ -309,9 +312,9 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
     @WorkerThread
     private fun parseVideoSize() {
         val videoInfo = mediaPlayer.getVideoInfo()
-        alphaVideoView!!.measureInternal((videoInfo.videoWidth / 2).toFloat(), videoInfo.videoHeight.toFloat())
+        alphaVideoView.measureInternal((videoInfo.videoWidth / 2).toFloat(), videoInfo.videoHeight.toFloat())
 
-        val scaleType = alphaVideoView!!.mScaleType
+        val scaleType = alphaVideoView.getScaleType()
         mainHandler.post {
             mPlayerAction?.onVideoSizeChanged(videoInfo.videoWidth / 2, videoInfo.videoHeight, scaleType)
         }
@@ -366,7 +369,7 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
                     }
                 }
                 DESTROY -> {
-                    alphaVideoView!!.onPause()
+                    alphaVideoView.onPause()
                     if (playerState == PlayerState.STARTED) {
                         mediaPlayer.pause()
                         playerState = PlayerState.PAUSED
@@ -376,7 +379,7 @@ class PlayerController(context: Context, owner: LifecycleOwner, mediaPlayer: IMe
                         playerState = PlayerState.STOPPED
                     }
                     mediaPlayer.release()
-                    alphaVideoView!!.release()
+                    alphaVideoView.release()
                     playerState = PlayerState.RELEASE
 
                     playThread?.let {
