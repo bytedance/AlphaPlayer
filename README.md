@@ -142,3 +142,8 @@ AlphaPlayer内部是通过Render渲染纹理画面的，设计师导出的视频
 ### License
 
 Apache 2.0
+
+### 招聘位
+
+再插播个招聘广告~
+抖音直播团队持续招聘客户端研发，Base涵盖北京、杭州、深圳三地，简历可直接发送到邮箱：dengzhuoyao@bytedance.com，如想交流咨询可加wx：ZHp5LTMxOA==
