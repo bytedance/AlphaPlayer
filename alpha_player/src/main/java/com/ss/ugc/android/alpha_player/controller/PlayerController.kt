@@ -37,15 +37,15 @@ import java.lang.Exception
 class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
 
     companion object {
-        val INIT_MEDIA_PLAYER: Int = 1
-        val SET_DATA_SOURCE: Int =  2
-        val START: Int = 3
-        val PAUSE: Int = 4
-        val RESUME: Int = 5
-        val STOP: Int = 6
-        val DESTROY: Int = 7
-        val SURFACE: Int = 8
-        val RESET: Int = 9
+        const val INIT_MEDIA_PLAYER: Int = 1
+        const val SET_DATA_SOURCE: Int =  2
+        const val START: Int = 3
+        const val PAUSE: Int = 4
+        const val RESUME: Int = 5
+        const val STOP: Int = 6
+        const val DESTROY: Int = 7
+        const val SURFACE: Int = 8
+        const val RESET: Int = 9
 
         fun get(configuration: Configuration, mediaPlayer: IMediaPlayer? = null): PlayerController {
             return PlayerController(configuration.context, configuration.lifecycleOwner,

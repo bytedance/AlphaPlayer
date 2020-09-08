@@ -1,8 +1,6 @@
 package com.ss.ugc.android.alpha_player.widget
 
 import android.content.Context
-import android.graphics.PixelFormat
-import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.view.Surface
 import android.view.View
@@ -25,11 +23,11 @@ class AlphaVideoGLTextureView @JvmOverloads constructor(context: Context, attr: 
         return isSurfaceCreated
     }
 
-    var mVideoWidth: Float = 0f
-    var mVideoHeight: Float = 0f
-    var mScaleType: ScaleType = ScaleType.ScaleAspectFill
+    private var mVideoWidth: Float = 0f
+    private var mVideoHeight: Float = 0f
+    private var mScaleType: ScaleType = ScaleType.ScaleAspectFill
 
-    var mRenderer: IRender? = null
+    private var mRenderer: IRender? = null
     var mPlayerController: IPlayerControllerExt? = null
     var mSurface: Surface? = null
 
@@ -52,10 +50,9 @@ class AlphaVideoGLTextureView @JvmOverloads constructor(context: Context, attr: 
     init {
         setEGLContextClientVersion(GL_CONTEXT_VERSION)
         setEGLConfigChooser(8, 8, 8, 8, 16, 0)
-//        holder.setFormat(PixelFormat.TRANSLUCENT)
         addOnSurfacePreparedListener()
-//        setZOrderOnTop(true)
         preserveEGLContextOnPause = true
+        isOpaque = false
     }
 
     private fun addOnSurfacePreparedListener() {
@@ -112,7 +109,6 @@ class AlphaVideoGLTextureView @JvmOverloads constructor(context: Context, attr: 
             }
         }
     }
-
 
     override fun onFirstFrame() {
         mRenderer?.onFirstFrame()
