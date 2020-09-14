@@ -37,5 +37,5 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer-core:2.9.3'
 
     implementation project(':alpha_player')
-//    implementation 'com.github.bytedance:AlphaPlayer:1.0.3'
+//    implementation 'com.github.bytedance:AlphaPlayer:1.0.4'
 }
