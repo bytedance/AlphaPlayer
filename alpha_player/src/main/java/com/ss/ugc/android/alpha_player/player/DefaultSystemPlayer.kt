@@ -21,21 +21,21 @@ class DefaultSystemPlayer : AbsPlayer() {
         mediaPlayer = MediaPlayer()
 
         mediaPlayer.setOnCompletionListener(MediaPlayer.OnCompletionListener { mediaPlayer ->
-            completionListener.onCompletion()
+            completionListener?.onCompletion()
         })
 
         mediaPlayer.setOnPreparedListener(MediaPlayer.OnPreparedListener { mediaPlayer ->
-            preparedListener.onPrepared()
+            preparedListener?.onPrepared()
         })
 
         mediaPlayer.setOnErrorListener(MediaPlayer.OnErrorListener { mp, what, extra ->
-            errorListener.onError(what, extra, "")
+            errorListener?.onError(what, extra, "")
             false
         })
 
         mediaPlayer.setOnInfoListener { mp, what, extra ->
             if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
-                firstFrameListener.onFirstFrame()
+                firstFrameListener?.onFirstFrame()
             }
             false
         }

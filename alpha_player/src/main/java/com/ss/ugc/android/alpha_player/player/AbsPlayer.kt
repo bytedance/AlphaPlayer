@@ -7,10 +7,10 @@ import android.content.Context
  */
 abstract class AbsPlayer(context: Context? = null) : IMediaPlayer {
 
-    lateinit var completionListener: IMediaPlayer.OnCompletionListener
-    lateinit var preparedListener: IMediaPlayer.OnPreparedListener
-    lateinit var errorListener: IMediaPlayer.OnErrorListener
-    lateinit var firstFrameListener: IMediaPlayer.OnFirstFrameListener
+    var completionListener: IMediaPlayer.OnCompletionListener? = null
+    var preparedListener: IMediaPlayer.OnPreparedListener? = null
+    var errorListener: IMediaPlayer.OnErrorListener? = null
+    var firstFrameListener: IMediaPlayer.OnFirstFrameListener? = null
 
     override fun setOnCompletionListener(completionListener: IMediaPlayer.OnCompletionListener) {
         this.completionListener = completionListener
