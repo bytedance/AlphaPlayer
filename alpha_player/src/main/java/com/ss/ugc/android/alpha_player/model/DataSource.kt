@@ -15,6 +15,7 @@ class DataSource {
 
     var portScaleType: ScaleType? = null
     var landScaleType: ScaleType? = null
+    var isLooping: Boolean = false
 
     fun setBaseDir(baseDir: String): DataSource {
         this.baseDir = if (baseDir.endsWith(File.separator)) baseDir else (baseDir + File.separator)
@@ -30,6 +31,11 @@ class DataSource {
     fun setLandscapePath(landscapePath: String, landscapeScaleType: Int): DataSource {
         this.landPath = landscapePath
         this.landScaleType = ScaleType.convertFrom(landscapeScaleType)
+        return this
+    }
+
+    fun setLooping(isLooping: Boolean): DataSource {
+        this.isLooping = isLooping
         return this
     }
 

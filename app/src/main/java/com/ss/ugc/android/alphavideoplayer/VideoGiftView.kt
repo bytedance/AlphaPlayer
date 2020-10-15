@@ -64,6 +64,7 @@ class VideoGiftView @JvmOverloads constructor(
             .setBaseDir(filePath)
             .setPortraitPath(configModel.portraitItem!!.path!!, configModel.portraitItem!!.alignMode)
             .setLandscapePath(configModel.landscapeItem!!.path!!, configModel.landscapeItem!!.alignMode)
+            .setLooping(false)
         startDataSource(dataSource)
     }
 

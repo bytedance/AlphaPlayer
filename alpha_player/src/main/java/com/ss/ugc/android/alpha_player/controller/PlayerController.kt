@@ -270,6 +270,7 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
         scaleType?.let {
             alphaVideoView.setScaleType(it)
         }
+        mediaPlayer.setLooping(dataSource.isLooping)
         mediaPlayer.setDataSource(dataPath)
         if (alphaVideoView.isSurfaceCreated()) {
             prepareAsync()
