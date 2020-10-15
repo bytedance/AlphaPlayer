@@ -67,7 +67,7 @@ Webp相比PNG和JPEG格式体积可以减少25%，在移动端的平台支持上
 
 大致的混合过程可以看下图示例
 
-<img src="/Users/dengzhuoyao/Code/AlphaVideoPlayer/image/introduction.png" alt="introduction" style="zoom:75%;" />
+<img src="./image/introduction.png" alt="introduction" style="zoom:75%;" />
 
 原素材的画面中左边部分使用RGB通道存储了原透明视频的Alpha值，右边部分使用RGB通道存储了原透明视频的RGB值，然后在端上通过OpenGL重新将每个像素点的Alpha值和RGB值进行组合，重新得到ARGB视频画面，实现透明视频的动画效果。
 
