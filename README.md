@@ -130,6 +130,7 @@ fun startVideoAnimation() {
   val dataSource = DataSource().setBaseDir(baseDir)
     .setPortraitPath(portraitFileName, portraitScaleType)
     .setLandscapePath(landscapeFileName, landscapeScaleType)
+  	.setLooping(false)	// 可设置该视频是否循环播放
   if (dataSource.isValid()) {
     playerController.start(dataSource)
   }
