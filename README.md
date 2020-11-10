@@ -191,7 +191,7 @@ val playerController = PlayerController.get(config, DefaultSystemPlayer())
 
 第二种方式，在AE上完成动画后期效果后，直接输出视频序列帧，然后使用我们提供的素材制作脚本 `convertAlphaVideo.py` 进行处理也可以直接得出成品素材视频，脚本的大致原理如下：
 
-<img src="/Users/dengzhuoyao/Code/AlphaVideoPlayer/image/tools.png" alt="tools" style="zoom:70%;" />
+<img src="./image/tools.png" alt="tools" style="zoom:70%;" />
 
 可以看到通道分离和画面拼接是基于ffmpeg和ImageMagick两套工具实现的，所以运行前需要先配置ffmpeg和ImageMagick的环境。
 
