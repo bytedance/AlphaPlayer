@@ -34,7 +34,7 @@ import java.lang.Exception
 /**
  * created by dengzhuoyao on 2020/07/08
  */
-class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
+class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
 
     companion object {
         const val INIT_MEDIA_PLAYER: Int = 1
@@ -44,7 +44,7 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
         const val RESUME: Int = 5
         const val STOP: Int = 6
         const val DESTROY: Int = 7
-        const val SURFACE: Int = 8
+        const val SURFACE_PREPARED: Int = 8
         const val RESET: Int = 9
 
         fun get(configuration: Configuration, mediaPlayer: IMediaPlayer? = null): PlayerController {
@@ -54,9 +54,9 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
         }
     }
 
+    private var suspendDataSource: DataSource? = null
     var isPlaying : Boolean = false
     var playerState = PlayerState.NOT_PREPARED
-    val context: Context
     var mMonitor: IMonitor? = null
     var mPlayerAction: IPlayerAction? = null
     var mediaPlayer: IMediaPlayer
@@ -80,7 +80,6 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
     }
 
     init {
-        this.context = context
         this.mediaPlayer = mediaPlayer
         init(owner)
         initAlphaView()
@@ -174,8 +173,8 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
         return message
     }
 
-    override fun setSurface(surface: Surface) {
-        sendMessage(getMessage(SURFACE, surface))
+    override fun surfacePrepared(surface: Surface) {
+        sendMessage(getMessage(SURFACE_PREPARED, surface))
     }
 
     override fun start(dataSource: DataSource) {
@@ -274,8 +273,19 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
         mediaPlayer.setDataSource(dataPath)
         if (alphaVideoView.isSurfaceCreated()) {
             prepareAsync()
+        } else {
+            suspendDataSource = dataSource
         }
     }
+
+    @WorkerThread
+    private fun handleSuspendedEvent() {
+        suspendDataSource?.let {
+            setVideoFromFile(it)
+        }
+        suspendDataSource = null
+    }
+
 
     @WorkerThread
     private fun prepareAsync() {
@@ -332,9 +342,10 @@ class PlayerController(context: Context, owner: LifecycleOwner, val alphaVideoVi
                 INIT_MEDIA_PLAYER -> {
                     initPlayer()
                 }
-                SURFACE -> {
+                SURFACE_PREPARED -> {
                     val surface = msg.obj as Surface
                     mediaPlayer.setSurface(surface)
+                    handleSuspendedEvent()
                 }
                 SET_DATA_SOURCE -> {
                     val dataSource = msg.obj as DataSource
