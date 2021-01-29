@@ -18,6 +18,7 @@ import com.ss.ugc.android.alpha_player.model.Configuration
 import com.ss.ugc.android.alpha_player.model.DataSource
 import com.ss.ugc.android.alphavideoplayer.player.ExoPlayerImpl
 import com.ss.ugc.android.alphavideoplayer.utils.JsonUtil
+import java.io.File
 
 /**
  * created by dengzhuoyao on 2020/07/08
@@ -45,7 +46,7 @@ class VideoGiftView @JvmOverloads constructor(
     fun initPlayerController(context: Context, owner: LifecycleOwner, playerAction: IPlayerAction, monitor: IMonitor) {
         val configuration = Configuration(context, owner)
         //  GLTextureView supports custom display layer, but GLSurfaceView has better performance, and the GLSurfaceView is default.
-        configuration.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
+        configuration.alphaVideoViewType = AlphaVideoViewType.GL_SURFACE_VIEW
         //  You can implement your IMediaPlayer, here we use ExoPlayerImpl that implemented by ExoPlayer, and
         //  we support DefaultSystemPlayer as default player.
         mPlayerController = PlayerController.get(configuration, ExoPlayerImpl(context))
@@ -61,10 +62,36 @@ class VideoGiftView @JvmOverloads constructor(
         }
         val configModel = JsonUtil.parseConfigModel(filePath)
         val dataSource = DataSource()
-            .setBaseDir(filePath)
-            .setPortraitPath(configModel.portraitItem!!.path!!, configModel.portraitItem!!.alignMode)
-            .setLandscapePath(configModel.landscapeItem!!.path!!, configModel.landscapeItem!!.alignMode)
-            .setLooping(false)
+        configModel.portraitItem?.apply {
+            dataSource.setPortraitDataInfo {
+                path = filePath + File.separator + this@apply.path
+                setScaleType(this@apply.align)
+                version = this@apply.version
+                totalFrame = this@apply.totalFrame
+                videoWidth = this@apply.videoWidth
+                videoHeight = this@apply.videoHeight
+                actualWidth = this@apply.actualWidth
+                actualHeight = this@apply.actualHeight
+                setAlphaArea(this@apply.alphaFrame)
+                setRgbArea(this@apply.rgbFrame)
+                masks = this@apply.masks
+            }
+        }
+        configModel.landscapeItem?.apply {
+            dataSource.setLandscapeDataInfo {
+                path = filePath + File.separator + this@apply.path
+                setScaleType(this@apply.align)
+                version = this@apply.version
+                totalFrame = this@apply.totalFrame
+                videoWidth = this@apply.videoWidth
+                videoHeight = this@apply.videoHeight
+                actualWidth = this@apply.actualWidth
+                actualHeight = this@apply.actualHeight
+                setAlphaArea(this@apply.alphaFrame)
+                setRgbArea(this@apply.rgbFrame)
+                masks = this@apply.masks
+            }
+        }
         startDataSource(dataSource)
     }
 

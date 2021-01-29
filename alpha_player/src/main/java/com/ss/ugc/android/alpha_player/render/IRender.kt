@@ -3,6 +3,7 @@ package com.ss.ugc.android.alpha_player.render
 import android.graphics.SurfaceTexture
 import android.opengl.GLSurfaceView
 import android.view.Surface
+import com.ss.ugc.android.alpha_player.model.DataInfo
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.widget.GLTextureView
 
@@ -33,7 +34,12 @@ interface IRender : GLTextureView.Renderer, GLSurfaceView.Renderer, SurfaceTextu
     /**
      * Called when the AlphaVideoView touch onMeasure() callback or the media source be parsed mate data.
      */
-    fun measureInternal(viewWidth: Float, viewHeight: Float, videoWidth: Float, videoHeight: Float)
+    fun measureInternal(viewWidth: Float, viewHeight: Float, tmpVideoWidth: Float, tmpVideoHeight: Float)
+
+    /**
+     * set config params to renderer.
+     */
+    fun setConfigParam(dataInfo: DataInfo)
 
     interface SurfaceListener {
 

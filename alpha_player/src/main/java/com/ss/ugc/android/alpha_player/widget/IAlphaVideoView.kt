@@ -3,6 +3,7 @@ package com.ss.ugc.android.alpha_player.widget
 import android.view.View
 import android.view.ViewGroup
 import com.ss.ugc.android.alpha_player.controller.IPlayerControllerExt
+import com.ss.ugc.android.alpha_player.model.DataInfo
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.render.IRender
 
@@ -33,6 +34,8 @@ interface IAlphaVideoView {
     fun setScaleType(scaleType: ScaleType)
 
     fun getScaleType(): ScaleType
+
+    fun setConfigParam(dataInfo: DataInfo)
 
     fun isSurfaceCreated(): Boolean
 

@@ -36,6 +36,6 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.google.android.exoplayer:exoplayer-core:2.9.3'
 
-//    implementation project(':alpha_player')
-    implementation 'com.github.bytedance:AlphaPlayer:1.0.6'
+    implementation project(':alpha_player')
+//    implementation 'com.github.bytedance:AlphaPlayer:1.0.6'
 }

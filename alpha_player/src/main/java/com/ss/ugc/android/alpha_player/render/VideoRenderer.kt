@@ -2,15 +2,16 @@ package com.ss.ugc.android.alpha_player.render
 
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
-import android.opengl.Matrix
 import android.os.Build
 import android.util.Log
 import android.view.Surface
+import com.ss.ugc.android.alpha_player.model.DataInfo
+import com.ss.ugc.android.alpha_player.model.Ratio
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.utils.ShaderUtil
-import com.ss.ugc.android.alpha_player.utils.TextureCropUtil
+import com.ss.ugc.android.alpha_player.utils.convertScreen2World
+import com.ss.ugc.android.alpha_player.utils.writeData
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -21,40 +22,19 @@ import javax.microedition.khronos.opengles.GL10
 /**
  * created by dengzhuoyao on 2020/07/07
  */
-class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
+class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
 
-    private val TAG = "VideoRender"
-
-    private val FLOAT_SIZE_BYTES = 4
-    private val TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES
-    private val TRIANGLE_VERTICES_DATA_POS_OFFSET = 0
-    private val TRIANGLE_VERTICES_DATA_UV_OFFSET = 3
-    private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
-
-    /**
-     * A float array that recorded the mapping relationship between texture
-     * coordinates and window coordinates. It will changed for {@link ScaleType}
-     * by {@link TextureCropUtil}.
-     */
-    private var halfRightVerticeData = floatArrayOf(
-        // X, Y, Z, U, V
-        -1.0f, -1.0f, 0f, 0.5f, 0f,
-        1.0f, -1.0f, 0f, 1f, 0f,
-        -1.0f, 1.0f, 0f, 0.5f, 1f,
-        1.0f, 1.0f, 0f, 1f, 1f
-    )
-
-    private var triangleVertices: FloatBuffer
-
-    private val mVPMatrix = FloatArray(16)
-    private val sTMatrix = FloatArray(16)
+    companion object {
+        private const val TAG = "VideoRender"
+        private const val FLOAT_SIZE_BYTES = 4
+        private const val GL_TEXTURE_EXTERNAL_OES = 0x8D65
+    }
 
     private var programID: Int = 0
     private var textureID: Int = 0
-    private var uMVPMatrixHandle: Int = 0
-    private var uSTMatrixHandle: Int = 0
     private var aPositionHandle: Int = 0
     private var aTextureHandle: Int = 0
+    private var aAlphaTextureHandle: Int = 0
 
     /**
      * After mediaPlayer call onCompletion, GLSurfaceView still will call
@@ -69,29 +49,264 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private var surfaceListener: IRender.SurfaceListener? = null
     private var scaleType = ScaleType.ScaleAspectFill
 
-    init {
-        triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices.put(halfRightVerticeData).position(0)
-        Matrix.setIdentityM(sTMatrix, 0)
-    }
+    private val scaleRatio = Ratio()
+    private var alphaArea: DataInfo.Area? = null
+    private var rgbArea: DataInfo.Area? = null
+    private var vertexArea: DataInfo.Area? = null
+
+    private var videoWidth = 0
+    private var videoHeight = 0
+    private var actualWidth = 0
+    private var actualHeight = 0
+
+    private val vertexData = FloatArray(8)
+    private val rgbTextureData = FloatArray(8)
+    private val alphaTextureData = FloatArray(8)
+
+    private var vertexBuffer: FloatBuffer? = null
+    private var rgbTextureBuffer: FloatBuffer? = null
+    private var alphaTextureBuffer: FloatBuffer? = null
 
     override fun setScaleType(scaleType: ScaleType) {
         this.scaleType = scaleType
     }
 
     override fun measureInternal(
-        viewWidth: Float, viewHeight: Float,
-        videoWidth: Float, videoHeight: Float) {
-        if (viewWidth <= 0 || viewHeight <= 0 || videoWidth <= 0 || videoHeight <= 0) {
+        viewWidth: Float,
+        viewHeight: Float,
+        tmpVideoWidth: Float,
+        tmpVideoHeight: Float
+    ) {
+        if (viewWidth <= 0 || viewHeight <= 0 || tmpVideoWidth <= 0 || tmpVideoHeight <= 0) {
             return
         }
 
-        halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType,
-            viewWidth, viewHeight, videoWidth, videoHeight)
-        triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices.put(halfRightVerticeData).position(0)
+        var videoWidth = tmpVideoWidth
+        var videoHeight = tmpVideoHeight
+        val currentRatio = viewWidth / viewHeight
+        val videoRatio = videoWidth / videoHeight
+        var ratioX: Float
+        var ratioY: Float
+        val leftRatio: Float
+        val rightRatio: Float
+        val topRatio: Float
+        val bottomRatio: Float
+
+        if (currentRatio > videoRatio) {
+            // 宽度缩放到viewWidth，裁剪上下
+            videoWidth = viewWidth
+            videoHeight = videoWidth / videoRatio
+            ratioX = 0f
+            ratioY = (1 - viewHeight / videoHeight) / 2
+        } else {
+            // 高度缩放到viewHeight，裁剪左右
+            videoHeight = viewHeight
+            videoWidth = videoHeight * videoRatio
+            ratioX = (1 - viewWidth / videoWidth) / 2
+            ratioY = 0f
+        }
+
+        when (scaleType) {
+            ScaleType.ScaleToFill -> {
+                //  全屏拉伸铺满
+                leftRatio = 0f
+                rightRatio = 0f
+                topRatio = 0f
+                bottomRatio = 0f
+                crop(leftRatio, topRatio, rightRatio, bottomRatio)
+            }
+            ScaleType.ScaleAspectFitCenter -> {
+                //  等比例缩放对齐全屏，屏幕多余部分留空
+                if (currentRatio > videoRatio) {
+                    // 高度缩放到viewHeight，计算两边留空位置
+                    videoHeight = viewHeight
+                    videoWidth = videoHeight * videoRatio
+                    ratioX = (1 - videoWidth / viewWidth) / 2
+                    ratioY = 0f
+                } else {
+                    // 宽度缩放到viewWidth，计算上下留空位置
+                    videoWidth = viewWidth
+                    videoHeight = videoWidth / videoRatio
+                    ratioX = 0f
+                    ratioY = (1 - videoHeight / viewHeight) / 2
+                }
+                zoom(ratioX, ratioY, ratioX, ratioY)
+            }
+            ScaleType.ScaleAspectFill -> {
+                //  等比例缩放铺满全屏，裁剪视频多余部分
+                leftRatio = ratioX
+                rightRatio = ratioX
+                topRatio = ratioY
+                bottomRatio = ratioY
+                crop(leftRatio, topRatio, rightRatio, bottomRatio)
+            }
+            ScaleType.TopFill -> {
+                leftRatio = ratioX
+                rightRatio = ratioX
+                topRatio = 0f
+                bottomRatio = ratioY * 2
+                crop(leftRatio, topRatio, rightRatio, bottomRatio)
+            }
+            ScaleType.BottomFill -> {
+                leftRatio = ratioX
+                rightRatio = ratioX
+                topRatio = ratioY * 2
+                bottomRatio = 0f
+                crop(leftRatio, topRatio, rightRatio, bottomRatio)
+            }
+            ScaleType.LeftFill -> {
+                leftRatio = 0f
+                rightRatio = ratioX * 2
+                topRatio = ratioY
+                bottomRatio = ratioY
+                crop(leftRatio, topRatio, rightRatio, bottomRatio)
+            }
+            ScaleType.RightFill -> {
+                leftRatio = ratioX * 2
+                rightRatio = 0f
+                topRatio = ratioY
+                bottomRatio = ratioY
+                crop(leftRatio, topRatio, rightRatio, bottomRatio)
+            }
+            ScaleType.TopFit -> {
+                // 宽度缩放到viewWidth，计算底部留空位置
+                videoWidth = viewWidth
+                videoHeight = videoWidth / videoRatio
+                ratioY = (1 - videoHeight / viewHeight) / 2
+                zoom(0f, 0f, 0f, ratioY * 2)
+            }
+            ScaleType.BottomFit -> {
+                // 宽度缩放到viewWidth，计算顶部留空位置
+                videoWidth = viewWidth
+                videoHeight = videoWidth / videoRatio
+                ratioY = (1 - videoHeight / viewHeight) / 2
+                zoom(0f, ratioY * 2, 0f, 0f)
+            }
+            ScaleType.LeftFit -> {
+                // 高度缩放到viewHeight，计算右边留空位置
+                videoHeight = viewHeight
+                videoWidth = videoHeight * videoRatio
+                ratioX = (1 - videoWidth / viewWidth) / 2
+                zoom(0f, 0f, ratioX * 2, 0f)
+            }
+            ScaleType.RightFit -> {
+                // 高度缩放到viewHeight，计算左边留空位置
+                videoHeight = viewHeight
+                videoWidth = videoHeight * videoRatio
+                ratioX = (1 - videoWidth / viewWidth) / 2
+                zoom(ratioX * 2, 0f, 0f, 0f)
+            }
+        }
+    }
+
+    override fun setConfigParam(dataInfo: DataInfo) {
+        scaleType = dataInfo.scaleType
+        videoWidth = dataInfo.videoWidth
+        videoHeight = dataInfo.videoHeight
+        actualWidth = dataInfo.actualWidth
+        actualHeight = dataInfo.actualHeight
+        if (dataInfo.isSupportZip()) {
+            rgbArea = dataInfo.getRgbArea()?.normalize(
+                dataInfo.videoWidth.toFloat(),
+                dataInfo.videoHeight.toFloat()
+            )
+            alphaArea = dataInfo.getAlphaArea()?.normalize(
+                dataInfo.videoWidth.toFloat(),
+                dataInfo.videoHeight.toFloat()
+            )
+        } else {
+            rgbArea = DataInfo.Area(0.5f, 0f, 1f, 1f)
+            alphaArea = DataInfo.Area(0f, 0f, 0.5f, 1f)
+        }
+        vertexArea = DataInfo.Area(0f, 0f, 1f, 1f)
+        initVertexData()
+    }
+
+    private fun initVertexData() {
+        convertScreen2World(vertexArea)
+        vertexArea?.apply {
+            writeData(vertexData, left, top, right, bottom)
+            vertexBuffer = ByteBuffer.allocateDirect(vertexData.size * FLOAT_SIZE_BYTES)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer()
+                    .put(vertexData)
+            vertexBuffer?.position(0)
+        }
+
+        rgbArea?.apply {
+            writeData(rgbTextureData, left, top, right, bottom)
+            rgbTextureBuffer = ByteBuffer.allocateDirect(rgbTextureData.size * FLOAT_SIZE_BYTES)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer()
+                    .put(rgbTextureData)
+            rgbTextureBuffer?.position(0)
+        }
+
+        alphaArea?.apply {
+            writeData(alphaTextureData, left, top, right, bottom)
+            alphaTextureBuffer = ByteBuffer.allocateDirect(alphaTextureData.size * FLOAT_SIZE_BYTES)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+                .put(alphaTextureData)
+            alphaTextureBuffer?.position(0)
+        }
+
+        scaleRatio.clear()
+    }
+
+    private fun zoom(
+        leftZoomRatio: Float,
+        topZoomRatio: Float,
+        rightZoomRatio: Float,
+        bottomZoomRatio: Float
+    ) {
+        vertexBuffer?.apply {
+            scaleRatio.set(leftZoomRatio, topZoomRatio, rightZoomRatio, bottomZoomRatio)
+            vertexArea?.let {
+                writeData(
+                    vertexData, it.left + leftZoomRatio * 2, it.top - topZoomRatio * 2,
+                    it.right - rightZoomRatio * 2, it.bottom + bottomZoomRatio * 2
+                )
+            }
+            position(0)
+            put(vertexData)
+        }
+    }
+
+    private fun crop(
+        leftCropRatio: Float,
+        topCropRatio: Float,
+        rightCropRatio: Float,
+        bottomCropRatio: Float
+    ) {
+        if (rgbTextureBuffer == null || rgbArea == null || alphaTextureBuffer == null || alphaArea == null) {
+            return
+        }
+
+        scaleRatio.set(
+            -leftCropRatio / (1 - rightCropRatio - leftCropRatio),
+            -topCropRatio / (1 - topCropRatio - bottomCropRatio),
+            -rightCropRatio / (1 - rightCropRatio - leftCropRatio),
+            -bottomCropRatio / (1 - topCropRatio - bottomCropRatio)
+        )
+
+        rgbArea?.apply {
+            writeData(
+                rgbTextureData, left + leftCropRatio * width(), top + topCropRatio * height(),
+                right - rightCropRatio * width(), bottom - bottomCropRatio * height()
+            )
+        }
+        rgbTextureBuffer?.position(0)
+        rgbTextureBuffer?.put(rgbTextureData)
+
+        alphaArea?.apply {
+            writeData(
+                alphaTextureData, left + leftCropRatio * width(), top + topCropRatio * height(),
+                right - rightCropRatio * width(), bottom - bottomCropRatio * height()
+            )
+        }
+        alphaTextureBuffer?.position(0)
+        alphaTextureBuffer?.put(alphaTextureData)
     }
 
     override fun setSurfaceListener(surfaceListener: IRender.SurfaceListener) {
@@ -105,7 +320,6 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            surfaceTexture.getTransformMatrix(sTMatrix)
         }
 
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
@@ -114,41 +328,49 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             GLES20.glFinish()
             return
         }
-        GLES20.glEnable(GLES20.GL_BLEND)
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
 
+        drawFrame()
+        GLES20.glFinish()
+    }
+
+    private fun drawFrame() {
+        if (vertexBuffer == null || rgbTextureBuffer == null || alphaTextureBuffer == null) {
+            Log.d(TAG, "setConfigParams not called")
+            return
+        }
         GLES20.glUseProgram(programID)
         checkGlError("glUseProgram")
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textureID)
-
-        triangleVertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
-        GLES20.glVertexAttribPointer(
-            aPositionHandle, 3, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
-        )
+        vertexBuffer?.position(0)
+        GLES20.glVertexAttribPointer(aPositionHandle, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
         checkGlError("glVertexAttribPointer maPosition")
         GLES20.glEnableVertexAttribArray(aPositionHandle)
         checkGlError("glEnableVertexAttribArray aPositionHandle")
 
-        triangleVertices.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
-        GLES20.glVertexAttribPointer(
-            aTextureHandle, 3, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
-        )
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textureID)
+
+        rgbTextureBuffer?.position(0)
+        GLES20.glVertexAttribPointer(aTextureHandle, 2, GLES20.GL_FLOAT, false, 0, rgbTextureBuffer)
         checkGlError("glVertexAttribPointer aTextureHandle")
         GLES20.glEnableVertexAttribArray(aTextureHandle)
         checkGlError("glEnableVertexAttribArray aTextureHandle")
 
-        Matrix.setIdentityM(mVPMatrix, 0)
-        GLES20.glUniformMatrix4fv(uMVPMatrixHandle, 1, false, mVPMatrix, 0)
-        GLES20.glUniformMatrix4fv(uSTMatrixHandle, 1, false, sTMatrix, 0)
+        alphaTextureBuffer?.position(0)
+        GLES20.glVertexAttribPointer(
+            aAlphaTextureHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            0,
+            alphaTextureBuffer
+        )
+        checkGlError("glVertexAttribPointer aAlphaTextureHandle")
+        GLES20.glEnableVertexAttribArray(aAlphaTextureHandle)
+        checkGlError("glEnableVertexAttribArray aAlphaTextureHandle")
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
-
-        GLES20.glFinish()
     }
 
     override fun onSurfaceChanged(glUnused: GL10, width: Int, height: Int) {
@@ -160,28 +382,25 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (programID == 0) {
             return
         }
+
         aPositionHandle = GLES20.glGetAttribLocation(programID, "aPosition")
         checkGlError("glGetAttribLocation aPosition")
         if (aPositionHandle == -1) {
             throw RuntimeException("Could not get attrib location for aPosition")
         }
+
         aTextureHandle = GLES20.glGetAttribLocation(programID, "aTextureCoord")
         checkGlError("glGetAttribLocation aTextureCoord")
         if (aTextureHandle == -1) {
             throw RuntimeException("Could not get attrib location for aTextureCoord")
         }
 
-        uMVPMatrixHandle = GLES20.glGetUniformLocation(programID, "uMVPMatrix")
-        checkGlError("glGetUniformLocation uMVPMatrix")
-        if (uMVPMatrixHandle == -1) {
-            throw RuntimeException("Could not get attrib location for uMVPMatrix")
+        aAlphaTextureHandle = GLES20.glGetAttribLocation(programID, "aAlphaTextureCoord")
+        checkGlError("glGetAttribLocation aAlphaTextureCoord")
+        if (aAlphaTextureHandle == -1) {
+            throw RuntimeException("Could not get attrib location for aAlphaTextureCoord")
         }
 
-        uSTMatrixHandle = GLES20.glGetUniformLocation(programID, "uSTMatrix")
-        checkGlError("glGetUniformLocation uSTMatrix")
-        if (uSTMatrixHandle == -1) {
-            throw RuntimeException("Could not get attrib location for uSTMatrix")
-        }
         prepareSurface()
     }
 
@@ -271,8 +490,14 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
      * @return programID If link program success, it will return program handle, else return 0.
      */
     private fun createProgram(): Int {
-        val vertexSource = ShaderUtil.loadFromAssetsFile("vertex.sh", alphaVideoView.getView().resources)
-        val fragmentSource = ShaderUtil.loadFromAssetsFile("frag.sh", alphaVideoView.getView().resources)
+        val vertexSource = ShaderUtil.loadFromAssetsFile(
+            "vertex.sh",
+            alphaVideoView.getView().resources
+        )
+        val fragmentSource = ShaderUtil.loadFromAssetsFile(
+            "frag.sh",
+            alphaVideoView.getView().resources
+        )
 
         val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
         if (vertexShader == 0) {

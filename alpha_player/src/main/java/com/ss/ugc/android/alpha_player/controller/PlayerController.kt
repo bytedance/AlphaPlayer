@@ -257,19 +257,15 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
     private fun setVideoFromFile(dataSource: DataSource) {
         mediaPlayer.reset()
         playerState = PlayerState.NOT_PREPARED
-        val orientation = context.resources.configuration.orientation
-
-        val dataPath = dataSource.getPath(orientation)
-        val scaleType = dataSource.getScaleType(orientation)
+        val dataInfo = dataSource.getDataInfo(context.resources.configuration.orientation)
+        val dataPath = dataInfo.path
         if (TextUtils.isEmpty(dataPath) || !File(dataPath).exists()) {
             monitor(false, errorInfo = "dataPath is empty or File is not exists. path = $dataPath")
             emitEndSignal()
             return
         }
-        scaleType?.let {
-            alphaVideoView.setScaleType(it)
-        }
-        mediaPlayer.setLooping(dataSource.isLooping)
+        alphaVideoView.setConfigParam(dataInfo)
+        mediaPlayer.setLooping(dataInfo.looping)
         mediaPlayer.setDataSource(dataPath)
         if (alphaVideoView.isSurfaceCreated()) {
             prepareAsync()
