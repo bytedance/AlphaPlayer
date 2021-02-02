@@ -1,6 +1,7 @@
 package com.ss.ugc.android.alpha_player.utils
 
 import com.ss.ugc.android.alpha_player.model.DataInfo
+import com.ss.ugc.android.alpha_player.model.Ratio
 
 fun convertScreen2World(src: DataInfo.Area?) {
     src?.apply {
@@ -11,6 +12,17 @@ fun convertScreen2World(src: DataInfo.Area?) {
         // rotate Y
         flipY()
     }
+}
+
+fun convertByRatio(src: DataInfo.Area, scaleRatio: Ratio) {
+    if (scaleRatio.isClear()) {
+        return
+    }
+    val scaleX: Float = 1 - (scaleRatio.leftRatio + scaleRatio.rightRatio)
+    val scaleY: Float = 1 - (scaleRatio.topRatio + scaleRatio.bottomRatio)
+    src.scaleX(scaleX)
+    src.scaleY(scaleY)
+    src.offset(scaleRatio.leftRatio, scaleRatio.topRatio)
 }
 
 fun writeData(data: FloatArray?, left: Float, top: Float, right: Float, bottom: Float) {

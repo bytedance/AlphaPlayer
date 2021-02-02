@@ -5,7 +5,9 @@ import android.opengl.GLES20
 import android.os.Build
 import android.util.Log
 import android.view.Surface
+import com.ss.ugc.android.alpha_player.mask.MaskRender
 import com.ss.ugc.android.alpha_player.model.DataInfo
+import com.ss.ugc.android.alpha_player.model.MaskSrc
 import com.ss.ugc.android.alpha_player.model.Ratio
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.utils.ShaderUtil
@@ -16,6 +18,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -27,6 +30,7 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
     companion object {
         private const val TAG = "VideoRender"
         private const val FLOAT_SIZE_BYTES = 4
+        private const val FRAME_LOSE_THRESHOLD = 2
         private const val GL_TEXTURE_EXTERNAL_OES = 0x8D65
     }
 
@@ -50,9 +54,12 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
     private var scaleType = ScaleType.ScaleAspectFill
 
     private val scaleRatio = Ratio()
+    private var masks: Map<String, Map<String, DataInfo.Element>>? = null
+    private var maskRender: MaskRender? = null
     private var alphaArea: DataInfo.Area? = null
     private var rgbArea: DataInfo.Area? = null
     private var vertexArea: DataInfo.Area? = null
+    private val curFrame = AtomicInteger(0)
 
     private var videoWidth = 0
     private var videoHeight = 0
@@ -219,7 +226,22 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
             alphaArea = DataInfo.Area(0f, 0f, 0.5f, 1f)
         }
         vertexArea = DataInfo.Area(0f, 0f, 1f, 1f)
+        masks = if (dataInfo.isSupportMask()) {
+            dataInfo.masks
+        } else {
+            null
+        }
         initVertexData()
+        resetMaskRender()
+    }
+
+    override fun addMaskSrcList(maskSrcList: ArrayList<MaskSrc>) {
+        if (masks != null && maskSrcList.isNotEmpty()) {
+            maskRender = MaskRender(alphaVideoView.getContext(), maskSrcList)
+            if (alphaVideoView.isSurfaceCreated()) {
+                maskRender?.init()
+            }
+        }
     }
 
     private fun initVertexData() {
@@ -252,6 +274,11 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
         }
 
         scaleRatio.clear()
+    }
+
+    private fun resetMaskRender() {
+        maskRender?.release()
+        maskRender = null
     }
 
     private fun zoom(
@@ -329,7 +356,11 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
             return
         }
 
+        curFrame.addAndGet(1)
         drawFrame()
+        maskRender?.apply {
+            drawMask()
+        }
         GLES20.glFinish()
     }
 
@@ -371,6 +402,31 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
+    }
+
+    private fun drawMask() {
+        var frame = curFrame.get()
+        val currentFrame: Int = surfaceListener?.getCurrentFrame() ?: 0
+        if (currentFrame > frame + FRAME_LOSE_THRESHOLD) {
+            frame = currentFrame
+            curFrame.set(frame)
+        }
+        if (masks == null) {
+            return
+        }
+        val elementMap: Map<String, DataInfo.Element>? = masks?.get(frame.toString())
+        if (elementMap == null) {
+            Log.i(TAG, "no current frame")
+            return
+        }
+        for ((key, value) in elementMap) {
+            maskRender!!.drawFrame(
+                textureID,
+                videoWidth, videoHeight,
+                actualWidth, actualHeight,
+                scaleRatio, key, value
+            )
+        }
     }
 
     override fun onSurfaceChanged(glUnused: GL10, width: Int, height: Int) {
@@ -445,6 +501,7 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
     }
 
     override fun onFirstFrame() {
+        curFrame.set(0)
         canDraw.compareAndSet(false, true)
         Log.i(TAG, "onFirstFrame:    canDraw = " + canDraw.get())
         alphaVideoView.requestRender()
@@ -454,6 +511,7 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
         canDraw.compareAndSet(true, false)
         Log.i(TAG, "onCompletion:   canDraw = " + canDraw.get())
         alphaVideoView.requestRender()
+        resetMaskRender()
     }
 
     /**

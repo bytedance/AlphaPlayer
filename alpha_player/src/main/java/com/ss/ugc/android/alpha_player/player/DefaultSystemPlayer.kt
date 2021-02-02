@@ -99,7 +99,11 @@ class DefaultSystemPlayer : AbsPlayer() {
         val videoWidth = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH).toInt()
         val videoHeight = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT).toInt()
 
-        return VideoInfo(videoWidth, videoHeight)
+        return VideoInfo(videoWidth, videoHeight, mediaPlayer.duration)
+    }
+
+    override fun getCurrentPosition(): Int {
+        return mediaPlayer.currentPosition
     }
 
     override fun getPlayerType(): String {

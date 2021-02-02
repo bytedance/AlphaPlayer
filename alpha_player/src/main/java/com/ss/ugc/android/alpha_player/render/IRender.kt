@@ -4,6 +4,7 @@ import android.graphics.SurfaceTexture
 import android.opengl.GLSurfaceView
 import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.DataInfo
+import com.ss.ugc.android.alpha_player.model.MaskSrc
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.widget.GLTextureView
 
@@ -41,6 +42,8 @@ interface IRender : GLTextureView.Renderer, GLSurfaceView.Renderer, SurfaceTextu
      */
     fun setConfigParam(dataInfo: DataInfo)
 
+    fun addMaskSrcList(maskSrcList: ArrayList<MaskSrc>)
+
     interface SurfaceListener {
 
         /**
@@ -52,5 +55,10 @@ interface IRender : GLTextureView.Renderer, GLSurfaceView.Renderer, SurfaceTextu
          * Called when Surface is Destroyed.
          */
         fun onSurfaceDestroyed()
+
+        /**
+         * Get current frame from player.
+         */
+        fun getCurrentFrame(): Int
     }
 }

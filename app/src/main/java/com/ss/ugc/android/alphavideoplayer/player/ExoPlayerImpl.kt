@@ -123,7 +123,11 @@ class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
     }
 
     override fun getVideoInfo(): VideoInfo {
-        return VideoInfo(currVideoWidth, currVideoHeight)
+        return VideoInfo(currVideoWidth, currVideoHeight, exoPlayer.duration.toInt())
+    }
+
+    override fun getCurrentPosition(): Int {
+        return exoPlayer.currentPosition.toInt()
     }
 
     override fun getPlayerType(): String {

@@ -67,6 +67,8 @@ interface IMediaPlayer {
 
     fun setScreenOnWhilePlaying(onWhilePlaying: Boolean)
 
+    fun getCurrentPosition(): Int
+
     @Throws(Exception::class)
     fun getVideoInfo(): VideoInfo
 

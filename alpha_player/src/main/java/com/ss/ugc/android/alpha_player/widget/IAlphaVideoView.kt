@@ -1,9 +1,11 @@
 package com.ss.ugc.android.alpha_player.widget
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import com.ss.ugc.android.alpha_player.controller.IPlayerControllerExt
 import com.ss.ugc.android.alpha_player.model.DataInfo
+import com.ss.ugc.android.alpha_player.model.MaskSrc
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.render.IRender
 
@@ -37,6 +39,8 @@ interface IAlphaVideoView {
 
     fun setConfigParam(dataInfo: DataInfo)
 
+    fun addMaskSrcList(maskSrcList: ArrayList<MaskSrc>)
+
     fun isSurfaceCreated(): Boolean
 
     fun measureInternal(videoWidth: Float, videoHeight: Float)
@@ -48,4 +52,6 @@ interface IAlphaVideoView {
     fun onPause()
 
     fun release()
+
+    fun getContext(): Context
 }

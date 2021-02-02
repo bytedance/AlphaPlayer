@@ -5,36 +5,40 @@ import android.arch.lifecycle.LifecycleObserver
 import android.arch.lifecycle.LifecycleOwner
 import android.arch.lifecycle.OnLifecycleEvent
 import android.content.Context
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Looper
-import android.os.Message
-import android.os.Process
+import android.os.*
 import android.support.annotation.WorkerThread
 import android.text.TextUtils
 import android.util.Log
 import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
+import com.ss.ugc.android.alpha_player.Constant
 import com.ss.ugc.android.alpha_player.IMonitor
 import com.ss.ugc.android.alpha_player.IPlayerAction
 import com.ss.ugc.android.alpha_player.model.AlphaVideoViewType
 import com.ss.ugc.android.alpha_player.model.Configuration
 import com.ss.ugc.android.alpha_player.model.DataSource
+import com.ss.ugc.android.alpha_player.model.MaskSrc
 import com.ss.ugc.android.alpha_player.player.DefaultSystemPlayer
 import com.ss.ugc.android.alpha_player.player.IMediaPlayer
 import com.ss.ugc.android.alpha_player.player.PlayerState
 import com.ss.ugc.android.alpha_player.render.VideoRenderer
+import com.ss.ugc.android.alpha_player.utils.createTextBitmap
 import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLSurfaceView
 import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLTextureView
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
 import java.io.File
-import java.lang.Exception
+import kotlin.math.ceil
 
 /**
  * created by dengzhuoyao on 2020/07/08
  */
-class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
+class PlayerController(
+    val context: Context,
+    owner: LifecycleOwner,
+    val alphaVideoViewType: AlphaVideoViewType,
+    mediaPlayer: IMediaPlayer
+): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
 
     companion object {
         const val INIT_MEDIA_PLAYER: Int = 1
@@ -46,11 +50,14 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
         const val DESTROY: Int = 7
         const val SURFACE_PREPARED: Int = 8
         const val RESET: Int = 9
+        const val SET_MASK: Int = 10
 
         fun get(configuration: Configuration, mediaPlayer: IMediaPlayer? = null): PlayerController {
-            return PlayerController(configuration.context, configuration.lifecycleOwner,
+            return PlayerController(
+                configuration.context, configuration.lifecycleOwner,
                 configuration.alphaVideoViewType,
-                mediaPlayer ?: DefaultSystemPlayer())
+                mediaPlayer ?: DefaultSystemPlayer()
+            )
         }
     }
 
@@ -59,12 +66,17 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
     var playerState = PlayerState.NOT_PREPARED
     var mMonitor: IMonitor? = null
     var mPlayerAction: IPlayerAction? = null
-    var mediaPlayer: IMediaPlayer
+    var mediaPlayer: IMediaPlayer?
     lateinit var alphaVideoView: IAlphaVideoView
 
     var workHandler: Handler? = null
     val mainHandler: Handler = Handler(Looper.getMainLooper())
     var playThread: HandlerThread? = null
+    private var totalFrame = 0
+    private var actualWidth = 0
+    private var actualHeight = 0
+    private var version = 0
+    private val masks = ArrayList<MaskSrc>()
 
     private val mPreparedListener = object: IMediaPlayer.OnPreparedListener {
         override fun onPrepared() {
@@ -101,7 +113,8 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
         alphaVideoView.let {
             val layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT)
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
             it.setLayoutParams(layoutParams)
             it.setPlayerController(this)
             it.setVideoRenderer(VideoRenderer(it))
@@ -133,6 +146,39 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
 
     override fun detachAlphaView(parentView: ViewGroup) {
         alphaVideoView.removeParentView(parentView)
+    }
+
+    override fun setMask(maskSrc: MaskSrc?) {
+        maskSrc?.apply {
+            sendMessage(getMessage(SET_MASK, this))
+        }
+    }
+
+    override fun getCurrentFrame(): Int {
+        if (mediaPlayer == null || totalFrame == 0) {
+            return -1
+        }
+        val duration = getDuration()
+        if (duration <= 0) {
+            return -1
+        }
+        val progress = (mediaPlayer?.getCurrentPosition() ?: 0).toFloat() / duration.toFloat()
+        if (progress > 1) {
+            return -1
+        }
+        return ceil((progress * totalFrame).toDouble()).toInt()
+    }
+
+    private fun getDuration(): Int {
+        return if (mediaPlayer == null) {
+            -1
+        } else {
+            try {
+                mediaPlayer?.getVideoInfo()?.duration ?: -1
+            } catch (e: Exception) {
+                -1
+            }
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -212,29 +258,30 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
     }
 
     override fun getPlayerType(): String {
-        return mediaPlayer.getPlayerType()
+        return mediaPlayer?.getPlayerType() ?: ""
     }
 
     @WorkerThread
     private fun initPlayer() {
         try {
-            mediaPlayer.initMediaPlayer()
+            mediaPlayer?.initMediaPlayer()
         } catch (e: Exception) {
             mediaPlayer = DefaultSystemPlayer()
-            mediaPlayer.initMediaPlayer()
+            mediaPlayer?.initMediaPlayer()
             // TODO: add log
         }
-        mediaPlayer.setScreenOnWhilePlaying(true)
-        mediaPlayer.setLooping(false)
+        mediaPlayer?.setScreenOnWhilePlaying(true)
+        mediaPlayer?.setLooping(false)
 
-        mediaPlayer.setOnFirstFrameListener(object : IMediaPlayer.OnFirstFrameListener {
+        mediaPlayer?.setOnFirstFrameListener(object : IMediaPlayer.OnFirstFrameListener {
             override fun onFirstFrame() {
                 alphaVideoView.onFirstFrame()
             }
         })
-        mediaPlayer.setOnCompletionListener(object : IMediaPlayer.OnCompletionListener {
+        mediaPlayer?.setOnCompletionListener(object : IMediaPlayer.OnCompletionListener {
             override fun onCompletion() {
                 alphaVideoView.onCompletion()
+                masks.clear()
                 playerState = PlayerState.PAUSED
                 monitor(true, errorInfo = "")
                 emitEndSignal()
@@ -248,14 +295,19 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
             setVideoFromFile(dataSource)
         } catch (e: Exception) {
             e.printStackTrace()
-            monitor(false, errorInfo = "alphaVideoView set dataSource failure: " + Log.getStackTraceString(e))
+            monitor(
+                false,
+                errorInfo = "alphaVideoView set dataSource failure: " + Log.getStackTraceString(
+                    e
+                )
+            )
             emitEndSignal()
         }
     }
 
     @WorkerThread
     private fun setVideoFromFile(dataSource: DataSource) {
-        mediaPlayer.reset()
+        mediaPlayer?.reset()
         playerState = PlayerState.NOT_PREPARED
         val dataInfo = dataSource.getDataInfo(context.resources.configuration.orientation)
         val dataPath = dataInfo.path
@@ -265,8 +317,13 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
             return
         }
         alphaVideoView.setConfigParam(dataInfo)
-        mediaPlayer.setLooping(dataInfo.looping)
-        mediaPlayer.setDataSource(dataPath)
+        alphaVideoView.addMaskSrcList(masks)
+        mediaPlayer?.setLooping(dataInfo.looping)
+        mediaPlayer?.setDataSource(dataPath)
+        totalFrame = dataInfo.totalFrame
+        actualWidth = dataInfo.actualWidth
+        actualHeight = dataInfo.actualHeight
+        version = dataInfo.version
         if (alphaVideoView.isSurfaceCreated()) {
             prepareAsync()
         } else {
@@ -285,7 +342,7 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
 
     @WorkerThread
     private fun prepareAsync() {
-        mediaPlayer.let {
+        mediaPlayer?.let {
             if (playerState == PlayerState.NOT_PREPARED || playerState == PlayerState.STOPPED) {
                 it.setOnPreparedListener(mPreparedListener)
                 it.setOnErrorListener(mErrorListener)
@@ -298,7 +355,7 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
     private fun startPlay() {
         when (playerState) {
             PlayerState.PREPARED -> {
-                mediaPlayer.start()
+                mediaPlayer?.start()
                 isPlaying = true
                 playerState = PlayerState.STARTED
                 mainHandler.post {
@@ -306,7 +363,7 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
                 }
             }
             PlayerState.PAUSED -> {
-                mediaPlayer.start()
+                mediaPlayer?.start()
                 playerState = PlayerState.STARTED
             }
             PlayerState.NOT_PREPARED, PlayerState.STOPPED -> {
@@ -323,12 +380,15 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
 
     @WorkerThread
     private fun parseVideoSize() {
-        val videoInfo = mediaPlayer.getVideoInfo()
-        alphaVideoView.measureInternal((videoInfo.videoWidth / 2).toFloat(), videoInfo.videoHeight.toFloat())
-
+        if (version <= 0) {
+            val videoInfo = mediaPlayer?.getVideoInfo()
+            actualWidth = (videoInfo?.videoWidth ?: 0) / 2
+            actualHeight = videoInfo?.videoHeight ?: 0
+        }
+        alphaVideoView.measureInternal(actualWidth.toFloat(), actualHeight.toFloat())
         val scaleType = alphaVideoView.getScaleType()
         mainHandler.post {
-            mPlayerAction?.onVideoSizeChanged(videoInfo.videoWidth / 2, videoInfo.videoHeight, scaleType)
+            mPlayerAction?.onVideoSizeChanged(actualWidth, actualHeight, scaleType)
         }
     }
 
@@ -340,7 +400,7 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
                 }
                 SURFACE_PREPARED -> {
                     val surface = msg.obj as Surface
-                    mediaPlayer.setSurface(surface)
+                    mediaPlayer?.setSurface(surface)
                     handleSuspendedEvent()
                 }
                 SET_DATA_SOURCE -> {
@@ -353,17 +413,22 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
                         playerState = PlayerState.PREPARED
                         startPlay()
                     } catch (e: Exception) {
-                        monitor(false, errorInfo = "start video failure: " + Log.getStackTraceString(e))
+                        monitor(
+                            false, errorInfo = "start video failure: " + Log.getStackTraceString(
+                                e
+                            )
+                        )
                         emitEndSignal()
                     }
                 }
                 PAUSE -> {
                     when (playerState) {
                         PlayerState.STARTED -> {
-                            mediaPlayer.pause()
+                            mediaPlayer?.pause()
                             playerState = PlayerState.PAUSED
                         }
-                        else -> {}
+                        else -> {
+                        }
                     }
                 }
                 RESUME -> {
@@ -375,23 +440,24 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
                 STOP -> {
                     when (playerState) {
                         PlayerState.STARTED, PlayerState.PAUSED -> {
-                            mediaPlayer.pause()
+                            mediaPlayer?.pause()
                             playerState = PlayerState.PAUSED
                         }
-                        else -> {}
+                        else -> {
+                        }
                     }
                 }
                 DESTROY -> {
                     alphaVideoView.onPause()
                     if (playerState == PlayerState.STARTED) {
-                        mediaPlayer.pause()
+                        mediaPlayer?.pause()
                         playerState = PlayerState.PAUSED
                     }
                     if (playerState == PlayerState.PAUSED) {
-                        mediaPlayer.stop()
+                        mediaPlayer?.stop()
                         playerState = PlayerState.STOPPED
                     }
-                    mediaPlayer.release()
+                    mediaPlayer?.release()
                     alphaVideoView.release()
                     playerState = PlayerState.RELEASE
 
@@ -401,9 +467,29 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
                     }
                 }
                 RESET -> {
-                    mediaPlayer.reset()
+                    mediaPlayer?.reset()
                     playerState = PlayerState.NOT_PREPARED
                     isPlaying = false
+                }
+                SET_MASK -> {
+                    if (msg.obj !is MaskSrc) {
+                        return@let
+                    }
+
+                    val src = msg.obj as MaskSrc
+                    if (src.type == Constant.TYPE_MASK_TEXT) {
+                        try {
+                            src.bitmap = createTextBitmap(src)
+                        } catch (e: OutOfMemoryError) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    src.bitmap?.apply {
+                        src.width = width
+                        src.height = height
+                        masks.add(src)
+                    }
                 }
                 else -> {}
             }

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.ss.ugc.android.alpha_player.controller.IPlayerControllerExt
 import com.ss.ugc.android.alpha_player.model.DataInfo
+import com.ss.ugc.android.alpha_player.model.MaskSrc
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.render.IRender
 
@@ -45,6 +46,10 @@ class AlphaVideoGLTextureView @JvmOverloads constructor(context: Context, attr: 
             mSurface?.release()
             mSurface = null
             isSurfaceCreated = false
+        }
+
+        override fun getCurrentFrame(): Int {
+            return mPlayerController?.getCurrentFrame() ?: 0
         }
     }
 
@@ -103,6 +108,12 @@ class AlphaVideoGLTextureView @JvmOverloads constructor(context: Context, attr: 
             queueEvent {
                 setConfigParam(dataInfo)
             }
+        }
+    }
+
+    override fun addMaskSrcList(maskSrcList: ArrayList<MaskSrc>) {
+        queueEvent {
+            mRenderer?.addMaskSrcList(maskSrcList)
         }
     }
 
