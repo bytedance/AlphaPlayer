@@ -420,7 +420,7 @@ class VideoRenderer(private val alphaVideoView: IAlphaVideoView) : IRender {
             return
         }
         for ((key, value) in elementMap) {
-            maskRender!!.drawFrame(
+            maskRender?.drawFrame(
                 textureID,
                 videoWidth, videoHeight,
                 actualWidth, actualHeight,

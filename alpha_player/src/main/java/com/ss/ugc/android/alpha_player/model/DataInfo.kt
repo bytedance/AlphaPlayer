@@ -169,7 +169,7 @@ class DataInfo {
                 if (fitType != 0 && fitType != 1) {
                     return false
                 }
-                if (sourceFrame?.size == 4) {
+                if (sourceFrame?.size != 4) {
                     return false
                 }
                 return renderFrame?.size == 4
