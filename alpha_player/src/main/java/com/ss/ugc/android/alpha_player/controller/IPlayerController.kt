@@ -18,6 +18,8 @@ interface IPlayerController {
 
     fun resume()
 
+    fun isPlaying(): Boolean
+
     fun stop()
 
     fun reset()

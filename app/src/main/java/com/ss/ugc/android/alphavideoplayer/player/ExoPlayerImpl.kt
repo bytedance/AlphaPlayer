@@ -119,6 +119,10 @@ class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
         this.isLooping = looping
     }
 
+    override fun isPlaying(): Boolean {
+        return false
+    }
+
     override fun setScreenOnWhilePlaying(onWhilePlaying: Boolean) {
     }
 

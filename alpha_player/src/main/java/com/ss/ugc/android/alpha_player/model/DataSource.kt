@@ -12,6 +12,7 @@ class DataSource {
     private val portraitDataInfo: DataInfo = DataInfo()
     private val landscapeDataInfo: DataInfo = DataInfo()
     private var isValid = false
+    var messageId: Long = 0L
     var errorInfo: String = ""
 
     fun getDataInfo(orientation: Int): DataInfo {

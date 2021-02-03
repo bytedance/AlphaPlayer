@@ -65,6 +65,8 @@ interface IMediaPlayer {
 
     fun setLooping(looping: Boolean)
 
+    fun isPlaying(): Boolean
+
     fun setScreenOnWhilePlaying(onWhilePlaying: Boolean)
 
     fun getCurrentPosition(): Int

@@ -62,7 +62,8 @@ class PlayerController(
     }
 
     private var suspendDataSource: DataSource? = null
-    var isPlaying : Boolean = false
+    private var messageId: Long = 0L
+    var playing : Boolean = false
     var playerState = PlayerState.NOT_PREPARED
     var mMonitor: IMonitor? = null
     var mPlayerAction: IPlayerAction? = null
@@ -224,6 +225,7 @@ class PlayerController(
     }
 
     override fun start(dataSource: DataSource) {
+        messageId = dataSource.messageId
         if (dataSource.isValid()) {
             setVisibility(View.VISIBLE)
             sendMessage(getMessage(SET_DATA_SOURCE, dataSource))
@@ -239,6 +241,10 @@ class PlayerController(
 
     override fun resume() {
         sendMessage(getMessage(RESUME, null))
+    }
+
+    override fun isPlaying(): Boolean {
+        return mediaPlayer?.isPlaying() == true
     }
 
     override fun stop() {
@@ -356,7 +362,7 @@ class PlayerController(
         when (playerState) {
             PlayerState.PREPARED -> {
                 mediaPlayer?.start()
-                isPlaying = true
+                playing = true
                 playerState = PlayerState.STARTED
                 mainHandler.post {
                     mPlayerAction?.startAction()
@@ -432,7 +438,7 @@ class PlayerController(
                     }
                 }
                 RESUME -> {
-                    if (isPlaying) {
+                    if (playing) {
                         startPlay()
                     } else {
                     }
@@ -469,7 +475,7 @@ class PlayerController(
                 RESET -> {
                     mediaPlayer?.reset()
                     playerState = PlayerState.NOT_PREPARED
-                    isPlaying = false
+                    playing = false
                 }
                 SET_MASK -> {
                     if (msg.obj !is MaskSrc) {
@@ -498,13 +504,14 @@ class PlayerController(
     }
 
     private fun emitEndSignal() {
-        isPlaying = false
+        playing = false
+        messageId = 0L
         mainHandler.post {
             mPlayerAction?.endAction()
         }
     }
 
     private fun monitor(state: Boolean, what: Int = 0, extra: Int = 0, errorInfo: String) {
-        mMonitor?.monitor(state, getPlayerType(), what, extra, errorInfo)
+        mMonitor?.monitor(state, getPlayerType(), what, extra, "$errorInfo, messageId: $messageId")
     }
 }

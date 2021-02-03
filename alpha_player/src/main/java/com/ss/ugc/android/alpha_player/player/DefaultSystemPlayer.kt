@@ -80,6 +80,10 @@ class DefaultSystemPlayer : AbsPlayer() {
         mediaPlayer.isLooping = looping
     }
 
+    override fun isPlaying(): Boolean {
+        return mediaPlayer.isPlaying
+    }
+
     override fun setScreenOnWhilePlaying(onWhilePlaying: Boolean) {
         mediaPlayer.setScreenOnWhilePlaying(onWhilePlaying)
     }
