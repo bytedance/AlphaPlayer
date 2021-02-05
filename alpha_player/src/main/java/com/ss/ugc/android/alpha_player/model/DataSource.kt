@@ -40,6 +40,9 @@ class DataSource {
     }
 
     fun getPath(orientation: Int): String {
+        if (orientation == 3) {
+            return baseDir + "cc.mp4"
+        }
         return baseDir + (if (Configuration.ORIENTATION_PORTRAIT == orientation) portPath else landPath)
     }
 

@@ -30,6 +30,7 @@ import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLTextureView
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
 import java.io.File
 import java.lang.Exception
+import java.util.*
 
 /**
  * created by dengzhuoyao on 2020/07/08
@@ -257,7 +258,8 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
     private fun setVideoFromFile(dataSource: DataSource) {
         mediaPlayer.reset()
         playerState = PlayerState.NOT_PREPARED
-        val orientation = context.resources.configuration.orientation
+        //val orientation = context.resources.configuration.orientation
+        val orientation = if(Random().nextBoolean()) context.resources.configuration.orientation else 3
 
         val dataPath = dataSource.getPath(orientation)
         val scaleType = dataSource.getScaleType(orientation)

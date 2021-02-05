@@ -12,6 +12,9 @@ class ConfigModel {
     @SerializedName("portrait")
     var portraitItem: Item? = null
 
+    @SerializedName("duqian")
+    var duqianItem: Item? = null
+
     class Item {
         @SerializedName("path")
         var path: String? = null
