@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.utils.ShaderUtil
+import com.ss.ugc.android.alpha_player.utils.TextureCropUtil
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -95,8 +96,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             return
         }
 
-        /*halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType,
-            viewWidth, viewHeight, videoWidth, videoHeight)*/
+        //halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
         triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
         triangleVertices.put(halfRightVerticeData).position(0)
