@@ -31,10 +31,10 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
     private var halfRightVerticeData1 = floatArrayOf(
         // X, Y, Z, U, V
-        -0.5f, -1.0f, 0f, 0.5f, 0f,
-        0.5f, -0.5f, 0f, 1f, 0f,
-        -0.5f, 0.5f, 0f, 0.5f, 1f,
-        0.5f, 0.5f, 0f, 1f, 1f
+        -0.25f, -0.15f, 0f, 0f, 0f,
+        0.25f, -0.15f, 0f, 1f, 0f,
+        -0.25f, 0.15f, 0f, 0f, 1f,
+        0.25f, 0.15f, 0f, 1f, 1f
     )
 
     /**
@@ -45,9 +45,9 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private var halfRightVerticeData = floatArrayOf(//x取反，画面翻转
         // X, Y, Z, U, V
         -1.0f, -1.0f, 0f, 0.0f, 0f,
-        1.0f, -1.0f, 0f, 0.5f, 0f,
-        -1.0f, 1.0f, 0f, 0.0f, 1f,
-        1.0f, 1.0f, 0f, 0.5f, 1f
+        1.0f, -1.0f, 0f, 1f, 0f,
+        -1.0f, 1.0f, 0f, 0f, 1f,
+        1.0f, 1.0f, 0f, 1f, 1f
     )
 
     private var triangleVertices: FloatBuffer?=null
@@ -161,10 +161,10 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glUniform1i(uTextureHandle, 1)
         checkGlError("mask")
 
-        triangleVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
+        maskVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
             aPositionHandle, 3, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
+            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, maskVertices
         )
         checkGlError("glVertexAttribPointer maPosition")
         GLES20.glEnableVertexAttribArray(aPositionHandle)
@@ -184,17 +184,17 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glUniformMatrix4fv(uSTMatrixHandle, 1, false, sTMatrix, 0)
 
         //
-        GLES20.glUniform1f(switchHandle, 1.0f)
+        GLES20.glUniform1f(switchHandle, 0.0f)
         checkGlError("switchHandle")
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
 
-        //start
-        GLES20.glUniform1f(switchHandle, 0.0f)
-        maskVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
+        //start mask
+        GLES20.glUniform1f(switchHandle, 1.0f)
+        triangleVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
             aPositionHandle, 3, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, maskVertices
+            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
         )
         checkGlError("glVertexAttribPointer maPosition")
         GLES20.glEnableVertexAttribArray(aPositionHandle)
@@ -333,7 +333,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     }
 
     /**
-     * create program with {@link vertex.sh} and {@link frag.sh}. If attach shader or link
+     * create program with {@link vertex.sh} and {@link frag.glsl}. If attach shader or link
      * program, it will return 0, else return program handle
      *
      * @return programID If link program success, it will return program handle, else return 0.
@@ -344,7 +344,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             alphaVideoView.getView().resources
         )
         val fragmentSource = ShaderUtil.loadFromAssetsFile(
-            "frag.sh",
+            "frag.glsl",
             alphaVideoView.getView().resources
         )
 
