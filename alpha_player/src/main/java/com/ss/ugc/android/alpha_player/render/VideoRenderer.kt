@@ -29,7 +29,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private val TRIANGLE_VERTICES_DATA_POS_OFFSET = 0
     private val TRIANGLE_VERTICES_DATA_UV_OFFSET = 3
     private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
-    private var halfRightVerticeData1 = floatArrayOf(
+    private var maskVerticeData = floatArrayOf(
         // X, Y, Z, U, V
         -0.25f, -0.15f, 0f, 0f, 0f,
         0.25f, -0.15f, 0f, 1f, 0f,
@@ -42,7 +42,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
      * coordinates and window coordinates. It will changed for {@link ScaleType}
      * by {@link TextureCropUtil}.
      */
-    private var halfRightVerticeData = floatArrayOf(//x取反，画面翻转
+    private var halfVerticeData = floatArrayOf(//x取反，画面翻转
         // X, Y, Z, U, V
         -1.0f, -1.0f, 0f, 0.0f, 0f,
         1.0f, -1.0f, 0f, 1f, 0f,
@@ -89,13 +89,13 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     }
 
     private fun initVerticeInfo() {
-        triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
+        triangleVertices = ByteBuffer.allocateDirect(halfVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices?.put(halfRightVerticeData)?.position(0)
+        triangleVertices?.put(halfVerticeData)?.position(0)
 
-        maskVertices = ByteBuffer.allocateDirect(halfRightVerticeData1.size * FLOAT_SIZE_BYTES)
+        maskVertices = ByteBuffer.allocateDirect(maskVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        maskVertices?.put(halfRightVerticeData1)?.position(0)
+        maskVertices?.put(maskVerticeData)?.position(0)
     }
 
     override fun setScaleType(scaleType: ScaleType) {
@@ -138,12 +138,12 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glEnable(GLES20.GL_BLEND)
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
         // 基于源象素alpha通道值的半透明混合函数
-        GLES20.glBlendFuncSeparate(
+        /*GLES20.glBlendFuncSeparate(
             GLES20.GL_SRC_ALPHA,
             GLES20.GL_ONE_MINUS_SRC_ALPHA,
             GLES20.GL_ONE,
             GLES20.GL_ONE_MINUS_SRC_ALPHA
-        )
+        )*/
 
         GLES20.glUseProgram(programID)
         checkGlError("glUseProgram2")
@@ -183,10 +183,9 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glUniformMatrix4fv(uMVPMatrixHandle, 1, false, mVPMatrix, 0)
         GLES20.glUniformMatrix4fv(uSTMatrixHandle, 1, false, sTMatrix, 0)
 
-        //
+        //switch
         GLES20.glUniform1f(switchHandle, 0.0f)
         checkGlError("switchHandle")
-
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
 
         //start mask
@@ -333,14 +332,14 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     }
 
     /**
-     * create program with {@link vertex.sh} and {@link frag.glsl}. If attach shader or link
+     * create program with {@link vertex.glsl} and {@link frag.glsl}. If attach shader or link
      * program, it will return 0, else return program handle
      *
      * @return programID If link program success, it will return program handle, else return 0.
      */
     private fun createProgram(): Int {
         val vertexSource = ShaderUtil.loadFromAssetsFile(
-            "vertex.sh",
+            "vertex.glsl",
             alphaVideoView.getView().resources
         )
         val fragmentSource = ShaderUtil.loadFromAssetsFile(

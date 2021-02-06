@@ -12,8 +12,7 @@ void main() {
     vec4 color2Map = texture2D(sTexture, vec2(vTextureCoord.x/2.0 + 0.5, vTextureCoord.y));
     if (color2Map.g > 10.0/255.0) {
         colorout1 = vec4(color.rgb, 0.0);
-    }
-    else {
+    } else {
         colorout1 = vec4(color.rgb, color2Map.r);
     }
 
