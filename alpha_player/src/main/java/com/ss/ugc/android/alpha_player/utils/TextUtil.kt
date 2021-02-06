@@ -57,6 +57,10 @@ object TextUtil {
         return TextureLoadUtil.loadTexture(genTextBitmap(text))
     }
 
+    fun genBitmapTextureId(bitmap: Bitmap?): Int {
+        return TextureLoadUtil.loadTexture(bitmap)
+    }
+
     fun releaseTextTexture(textureId: Int) {
         if (textureId != 0) {
             GLES20.glDeleteTextures(1, intArrayOf(textureId), 0)

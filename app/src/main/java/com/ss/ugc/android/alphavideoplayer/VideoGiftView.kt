@@ -16,6 +16,7 @@ import com.ss.ugc.android.alpha_player.controller.PlayerController
 import com.ss.ugc.android.alpha_player.model.AlphaVideoViewType
 import com.ss.ugc.android.alpha_player.model.Configuration
 import com.ss.ugc.android.alpha_player.model.DataSource
+import com.ss.ugc.android.alpha_player.utils.BitmapUtil
 import com.ss.ugc.android.alphavideoplayer.player.ExoPlayerImpl
 import com.ss.ugc.android.alphavideoplayer.utils.JsonUtil
 
@@ -44,6 +45,8 @@ class VideoGiftView @JvmOverloads constructor(
 
     fun initPlayerController(context: Context, owner: LifecycleOwner, playerAction: IPlayerAction, monitor: IMonitor) {
         val configuration = Configuration(context, owner)
+
+        configuration.bitmap = BitmapUtil.createBitmapFromResId(context, R.mipmap.avator)
         //  GLTextureView supports custom display layer, but GLSurfaceView has better performance, and the GLSurfaceView is default.
         configuration.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
         //  You can implement your IMediaPlayer, here we use ExoPlayerImpl that implemented by ExoPlayer, and

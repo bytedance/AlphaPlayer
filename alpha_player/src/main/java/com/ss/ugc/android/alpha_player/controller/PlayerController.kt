@@ -25,6 +25,7 @@ import com.ss.ugc.android.alpha_player.player.DefaultSystemPlayer
 import com.ss.ugc.android.alpha_player.player.IMediaPlayer
 import com.ss.ugc.android.alpha_player.player.PlayerState
 import com.ss.ugc.android.alpha_player.render.VideoRenderer
+import com.ss.ugc.android.alpha_player.utils.TextUtil
 import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLSurfaceView
 import com.ss.ugc.android.alpha_player.widget.AlphaVideoGLTextureView
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
@@ -35,8 +36,9 @@ import java.util.*
 /**
  * created by dengzhuoyao on 2020/07/08
  */
-class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
-
+class PlayerController(val configuration: Configuration, val alphaVideoViewType: AlphaVideoViewType, mediaPlayer: IMediaPlayer): IPlayerControllerExt, LifecycleObserver, Handler.Callback {
+    lateinit var context: Context
+    lateinit var owner: LifecycleOwner
     companion object {
         const val INIT_MEDIA_PLAYER: Int = 1
         const val SET_DATA_SOURCE: Int =  2
@@ -49,7 +51,7 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
         const val RESET: Int = 9
 
         fun get(configuration: Configuration, mediaPlayer: IMediaPlayer? = null): PlayerController {
-            return PlayerController(configuration.context, configuration.lifecycleOwner,
+            return PlayerController(configuration,
                 configuration.alphaVideoViewType,
                 mediaPlayer ?: DefaultSystemPlayer())
         }
@@ -82,6 +84,8 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
 
     init {
         this.mediaPlayer = mediaPlayer
+        this.context = configuration.context
+        this.owner = configuration.lifecycleOwner
         init(owner)
         initAlphaView()
         initMediaPlayer()
@@ -105,7 +109,9 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
                 ViewGroup.LayoutParams.MATCH_PARENT)
             it.setLayoutParams(layoutParams)
             it.setPlayerController(this)
-            it.setVideoRenderer(VideoRenderer(it))
+            val renderer = VideoRenderer(it)
+            renderer.maskBitmap = configuration.bitmap
+            it.setVideoRenderer(renderer)
         }
     }
 
@@ -258,8 +264,8 @@ class PlayerController(val context: Context, owner: LifecycleOwner, val alphaVid
     private fun setVideoFromFile(dataSource: DataSource) {
         mediaPlayer.reset()
         playerState = PlayerState.NOT_PREPARED
-        //val orientation = context.resources.configuration.orientation
-        val orientation = if(Random().nextBoolean()) context.resources.configuration.orientation else 3
+        val orientation = context.resources.configuration.orientation
+        //val orientation = if(Random().nextBoolean()) context.resources.configuration.orientation else 3
 
         val dataPath = dataSource.getPath(orientation)
         val scaleType = dataSource.getScaleType(orientation)
