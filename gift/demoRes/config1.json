@@ -1,14 +1,10 @@
 {
 	"portrait": {
-		"path": "hy.mp4",
+		"path": "demo_video.mp4",
 		"align": 8
 	},
 	"landscape": {
 		"path": "demo_video.mp4",
-		"align": 2
-	},
-	"duqian": {
-		"path": "cc.mp4",
 		"align": 2
 	}
 }
