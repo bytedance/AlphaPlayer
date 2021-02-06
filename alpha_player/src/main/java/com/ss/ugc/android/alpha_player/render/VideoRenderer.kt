@@ -7,10 +7,9 @@ import android.os.Build
 import android.util.Log
 import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.ScaleType
-import com.ss.ugc.android.alpha_player.utils.ShaderUtil
-import com.ss.ugc.android.alpha_player.utils.TextureCropUtil
+import com.ss.ugc.android.alpha_player.model.Src
+import com.ss.ugc.android.alpha_player.utils.*
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -31,17 +30,26 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private val TRIANGLE_VERTICES_DATA_UV_OFFSET = 3
     private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
 
-    /**
-     * A float array that recorded the mapping relationship between texture
-     * coordinates and window coordinates. It will changed for {@link ScaleType}
-     * by {@link TextureCropUtil}.
-     */
-    private var halfRightVerticeData = floatArrayOf(
+
+    private var halfRightVerticeData1 = floatArrayOf(
         // X, Y, Z, U, V
         -1.0f, -1.0f, 0f, 0.5f, 0f,
         1.0f, -1.0f, 0f, 1f, 0f,
         -1.0f, 1.0f, 0f, 0.5f, 1f,
         1.0f, 1.0f, 0f, 1f, 1f
+    )
+
+    /**
+     * A float array that recorded the mapping relationship between texture
+     * coordinates and window coordinates. It will changed for {@link ScaleType}
+     * by {@link TextureCropUtil}.
+     */
+    private var halfRightVerticeData = floatArrayOf(//x取反，画面翻转
+        // X, Y, Z, U, V
+        -1.0f, -1.0f, 0f, 0.0f, 0f,
+        1.0f, -1.0f, 0f, 0.5f, 0f,
+        -1.0f, 1.0f, 0f, 0.0f, 1f,
+        1.0f, 1.0f, 0f, 0.5f, 1f
     )
 
     private var triangleVertices: FloatBuffer
@@ -69,11 +77,16 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private var surfaceListener: IRender.SurfaceListener? = null
     private var scaleType = ScaleType.ScaleAspectFill
 
+    private var textTextureId =1
+    var srcArray = GlFloatArray()
+
     init {
         triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
         triangleVertices.put(halfRightVerticeData).position(0)
         Matrix.setIdentityM(sTMatrix, 0)
+
+        textTextureId = TextUtil.genTextTextureId("杜小菜6666")
     }
 
     override fun setScaleType(scaleType: ScaleType) {
@@ -82,13 +95,13 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
     override fun measureInternal(
         viewWidth: Float, viewHeight: Float,
-        videoWidth: Float, videoHeight: Float) {
+        videoWidth: Float, videoHeight: Float
+    ) {
         if (viewWidth <= 0 || viewHeight <= 0 || videoWidth <= 0 || videoHeight <= 0) {
             return
         }
 
-        halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType,
-            viewWidth, viewHeight, videoWidth, videoHeight)
+        //halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
         triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
         triangleVertices.put(halfRightVerticeData).position(0)
@@ -109,19 +122,33 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         }
 
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f) //修改背景底色
         if (!canDraw.get()) {
             GLES20.glFinish()
             return
         }
+        //比较典型的半透明效果，如果源色 alpha 为0，则取目标色，如果源色alpha为1，则取源色，否则视源色的alpha大小各取一部分。源色的alpha越大，则源色取的越多，最终结果源色的表现更强；源色的alpha越小，则目标色“透过”的越多。
         GLES20.glEnable(GLES20.GL_BLEND)
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        //GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glBlendFunc(GLES20.GL_ONE,GLES20.GL_ZERO)
+        // 基于源象素alpha通道值的半透明混合函数
+        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
 
         GLES20.glUseProgram(programID)
         checkGlError("glUseProgram")
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textureID)
+
+
+        //绘制文字start，src 纹理坐标
+        srcArray.setArray(TexCoordsUtil.genSrcCoordsArray(srcArray.array, 500, 1000, 300, 500,  Src.FitType.CENTER_FULL))
+        //srcArray.setVertexAttribPointer(shader.aTextureSrcCoordinatesLocation)
+        srcArray.setVertexAttribPointer(aPositionHandle)
+        // 绑定 src纹理
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textTextureId)
+        GLES20.glUniform1i(aPositionHandle, 0)
 
         triangleVertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
@@ -271,8 +298,14 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
      * @return programID If link program success, it will return program handle, else return 0.
      */
     private fun createProgram(): Int {
-        val vertexSource = ShaderUtil.loadFromAssetsFile("vertex.sh", alphaVideoView.getView().resources)
-        val fragmentSource = ShaderUtil.loadFromAssetsFile("frag.sh", alphaVideoView.getView().resources)
+        val vertexSource = ShaderUtil.loadFromAssetsFile(
+            "vertex.sh",
+            alphaVideoView.getView().resources
+        )
+        val fragmentSource = ShaderUtil.loadFromAssetsFile(
+            "frag.sh",
+            alphaVideoView.getView().resources
+        )
 
         val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
         if (vertexShader == 0) {

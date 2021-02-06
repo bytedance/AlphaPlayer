@@ -1,6 +1,5 @@
 package com.ss.ugc.android.alpha_player.utils;
 
-
 import com.ss.ugc.android.alpha_player.model.ScaleType;
 
 /**
