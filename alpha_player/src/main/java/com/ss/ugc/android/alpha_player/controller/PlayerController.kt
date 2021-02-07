@@ -340,7 +340,7 @@ class PlayerController(
     @WorkerThread
     private fun handleSuspendedEvent() {
         suspendDataSource?.let {
-            setVideoFromFile(it)
+            prepareAsync()
         }
         suspendDataSource = null
     }
