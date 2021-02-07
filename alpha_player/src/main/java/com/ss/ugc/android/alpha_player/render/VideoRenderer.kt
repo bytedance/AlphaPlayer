@@ -31,10 +31,10 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
     private var maskVerticeData = floatArrayOf(
         // X, Y, Z, U, V
-        -0.25f, -0.15f, 0f, 0f, 0f,
-        0.25f, -0.15f, 0f, 1f, 0f,
-        -0.25f, 0.15f, 0f, 0f, 1f,
-        0.25f, 0.15f, 0f, 1f, 1f
+        -0.30f, -0.45f, 0f, 0f, 0f,
+        0.30f, -0.45f, 0f, 1f, 0f,
+        -0.30f, 0.25f, 0f, 0f, 1f,
+        0.30f, 0.25f, 0f, 1f, 1f
     )
 
     /**
@@ -42,7 +42,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
      * coordinates and window coordinates. It will changed for {@link ScaleType}
      * by {@link TextureCropUtil}.
      */
-    private var halfVerticeData = floatArrayOf(//x取反，画面翻转
+    private var videoVerticeData = floatArrayOf(
         // X, Y, Z, U, V
         -1.0f, -1.0f, 0f, 0.0f, 0f,
         1.0f, -1.0f, 0f, 1f, 0f,
@@ -89,9 +89,9 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     }
 
     private fun initVerticeInfo() {
-        triangleVertices = ByteBuffer.allocateDirect(halfVerticeData.size * FLOAT_SIZE_BYTES)
+        triangleVertices = ByteBuffer.allocateDirect(videoVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices?.put(halfVerticeData)?.position(0)
+        triangleVertices?.put(videoVerticeData)?.position(0)
 
         maskVertices = ByteBuffer.allocateDirect(maskVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()

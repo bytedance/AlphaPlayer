@@ -31,6 +31,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun initVideoGiftView() {
         video_gift_view.initPlayerController(this, this, playerAction, monitor)
+
+        video_gift_view.post {
+            video_gift_view.attachView()
+        }
     }
 
     private val playerAction = object : IPlayerAction {
