@@ -411,6 +411,7 @@ class PlayerController(val configuration: Configuration, val alphaVideoViewType:
                         it.quit()
                         it.interrupt()
                     }
+                    configuration.bitmap?.recycle()
                 }
                 RESET -> {
                     mediaPlayer.reset()
