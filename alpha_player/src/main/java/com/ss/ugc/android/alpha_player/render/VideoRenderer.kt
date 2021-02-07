@@ -22,13 +22,41 @@ import javax.microedition.khronos.opengles.GL10
  */
 class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
-    private val TAG = "VideoRender"
+    companion object {
+        private val TAG = VideoRenderer::class.java.simpleName
+    }
 
     private val FLOAT_SIZE_BYTES = 4
     private val TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES
     private val TRIANGLE_VERTICES_DATA_POS_OFFSET = 0
     private val TRIANGLE_VERTICES_DATA_UV_OFFSET = 3
     private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
+    private var triangleVertices: FloatBuffer? = null
+    private var maskVertices: FloatBuffer? = null
+    private val mVPMatrix = FloatArray(16)
+    private val sTMatrix = FloatArray(16)
+    private var programID: Int = 0
+    private var textureID: Int = 0
+    private var uMVPMatrixHandle: Int = 0
+    private var uSTMatrixHandle: Int = 0
+    private var aPositionHandle: Int = 0
+    private var aTextureHandle: Int = 0
+
+    private var uTextureHandle: Int = 0
+    private var switchHandle: Int = 0
+
+    /**
+     * After mediaPlayer call onCompletion, GLSurfaceView still will call
+     * {@link GLSurfaceView#requestRender} in some special case, so cause
+     * the media source last frame be drawn again. So we add this flag to
+     * avoid this case.
+     */
+    private val canDraw = AtomicBoolean(false)
+    private val updateSurface = AtomicBoolean(false)
+    private lateinit var surfaceTexture: SurfaceTexture
+    private var surfaceListener: IRender.SurfaceListener? = null
+    private var scaleType = ScaleType.ScaleAspectFill
+
     private var maskVerticeData = floatArrayOf(
         // X, Y, Z, U, V
         -0.30f, -0.45f, 0f, 0f, 0f,
@@ -50,49 +78,18 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         1.0f, 1.0f, 0f, 1f, 1f
     )
 
-    private var triangleVertices: FloatBuffer?=null
-    private var maskVertices: FloatBuffer?=null
-
-    private val mVPMatrix = FloatArray(16)
-    private val sTMatrix = FloatArray(16)
-
-    private var programID: Int = 0
-    private var textureID: Int = 0
-    private var uMVPMatrixHandle: Int = 0
-    private var uSTMatrixHandle: Int = 0
-    private var aPositionHandle: Int = 0
-    private var aTextureHandle: Int = 0
-    private var uTextureHandle: Int = 0
-    private var switchHandle: Int = 0
-
-    /**
-     * After mediaPlayer call onCompletion, GLSurfaceView still will call
-     * {@link GLSurfaceView#requestRender} in some special case, so cause
-     * the media source last frame be drawn again. So we add this flag to
-     * avoid this case.
-     */
-    private val canDraw = AtomicBoolean(false)
-    private val updateSurface = AtomicBoolean(false)
-
-    private lateinit var surfaceTexture: SurfaceTexture
-    private var surfaceListener: IRender.SurfaceListener? = null
-    private var scaleType = ScaleType.ScaleAspectFill
-
     private var maskTextureId = -1
-    var maskBitmap:Bitmap?=null
+    var maskBitmap: Bitmap? = null
 
     init {
         initVerticeInfo()
-
         Matrix.setIdentityM(sTMatrix, 0)
-
     }
 
     private fun initVerticeInfo() {
         triangleVertices = ByteBuffer.allocateDirect(videoVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
         triangleVertices?.put(videoVerticeData)?.position(0)
-
         maskVertices = ByteBuffer.allocateDirect(maskVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
         maskVertices?.put(maskVerticeData)?.position(0)
@@ -109,7 +106,6 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (viewWidth <= 0 || viewHeight <= 0 || videoWidth <= 0 || videoHeight <= 0) {
             return
         }
-
         //halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
         initVerticeInfo()
     }
@@ -136,14 +132,15 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         }
         //比较典型的半透明效果，如果源色 alpha 为0，则取目标色，如果源色alpha为1，则取源色，否则视源色的alpha大小各取一部分。源色的alpha越大，则源色取的越多，最终结果源色的表现更强；源色的alpha越小，则目标色“透过”的越多。
         GLES20.glEnable(GLES20.GL_BLEND)
-        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        //GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        //GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
         // 基于源象素alpha通道值的半透明混合函数
-        /*GLES20.glBlendFuncSeparate(
+        GLES20.glBlendFuncSeparate(
             GLES20.GL_SRC_ALPHA,
             GLES20.GL_ONE_MINUS_SRC_ALPHA,
             GLES20.GL_ONE,
             GLES20.GL_ONE_MINUS_SRC_ALPHA
-        )*/
+        )
 
         GLES20.glUseProgram(programID)
         checkGlError("glUseProgram2")
