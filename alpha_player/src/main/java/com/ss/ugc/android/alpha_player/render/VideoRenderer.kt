@@ -1,5 +1,6 @@
 package com.ss.ugc.android.alpha_player.render
 
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
 import android.opengl.Matrix
@@ -7,7 +8,6 @@ import android.os.Build
 import android.util.Log
 import android.view.Surface
 import com.ss.ugc.android.alpha_player.model.ScaleType
-import com.ss.ugc.android.alpha_player.model.Src
 import com.ss.ugc.android.alpha_player.utils.*
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
 import java.nio.ByteBuffer
@@ -22,47 +22,25 @@ import javax.microedition.khronos.opengles.GL10
  */
 class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
-    private val TAG = "VideoRender"
+    companion object {
+        private val TAG = VideoRenderer::class.java.simpleName
+    }
 
     private val FLOAT_SIZE_BYTES = 4
     private val TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES
     private val TRIANGLE_VERTICES_DATA_POS_OFFSET = 0
     private val TRIANGLE_VERTICES_DATA_UV_OFFSET = 3
     private val GL_TEXTURE_EXTERNAL_OES = 0x8D65
-
-
-    private var halfRightVerticeData1 = floatArrayOf(
-        // X, Y, Z, U, V
-        -1.0f, -1.0f, 0f, 0.5f, 0f,
-        1.0f, -1.0f, 0f, 1f, 0f,
-        -1.0f, 1.0f, 0f, 0.5f, 1f,
-        1.0f, 1.0f, 0f, 1f, 1f
-    )
-
-    /**
-     * A float array that recorded the mapping relationship between texture
-     * coordinates and window coordinates. It will changed for {@link ScaleType}
-     * by {@link TextureCropUtil}.
-     */
-    private var halfRightVerticeData = floatArrayOf(//x取反，画面翻转
-        // X, Y, Z, U, V
-        -1.0f, -1.0f, 0f, 0.0f, 0f,
-        1.0f, -1.0f, 0f, 0.5f, 0f,
-        -1.0f, 1.0f, 0f, 0.0f, 1f,
-        1.0f, 1.0f, 0f, 0.5f, 1f
-    )
-
-    private var triangleVertices: FloatBuffer
-
+    private var triangleVertices: FloatBuffer? = null
     private val mVPMatrix = FloatArray(16)
     private val sTMatrix = FloatArray(16)
-
     private var programID: Int = 0
     private var textureID: Int = 0
     private var uMVPMatrixHandle: Int = 0
     private var uSTMatrixHandle: Int = 0
     private var aPositionHandle: Int = 0
     private var aTextureHandle: Int = 0
+
 
     /**
      * After mediaPlayer call onCompletion, GLSurfaceView still will call
@@ -72,21 +50,59 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
      */
     private val canDraw = AtomicBoolean(false)
     private val updateSurface = AtomicBoolean(false)
-
     private lateinit var surfaceTexture: SurfaceTexture
     private var surfaceListener: IRender.SurfaceListener? = null
     private var scaleType = ScaleType.ScaleAspectFill
 
-    private var textTextureId =1
-    var srcArray = GlFloatArray()
+    /**
+     * A float array that recorded the mapping relationship between texture
+     * coordinates and window coordinates. It will changed for {@link ScaleType}
+     * by {@link TextureCropUtil}.
+     */
+    private var videoVerticeData = floatArrayOf(
+        // X, Y, Z, U, V
+        -1.0f, -1.0f, 0f, 0.0f, 0f,
+        1.0f, -1.0f, 0f, 1f, 0f,
+        -1.0f, 1.0f, 0f, 0f, 1f,
+        1.0f, 1.0f, 0f, 1f, 1f
+    )
+
+    private var maskVerticeData = floatArrayOf(
+        // X, Y, Z, U, V
+        -0.30f, -0.45f, 0f, 0f, 0f,
+        0.30f, -0.45f, 0f, 1f, 0f,
+        -0.30f, 0.25f, 0f, 0f, 1f,
+        0.30f, 0.25f, 0f, 1f, 1f
+    )
+
+    private var textVerticeData = floatArrayOf(
+        // X, Y, Z, U, V
+        -0.30f, -0.45f, 0f, 0f, 0f,
+        0.30f, -0.45f, 0f, 1f, 0f,
+        -0.50f, 0.55f, 0f, 0f, 1f,
+        0.50f, 0.55f, 0f, 1f, 1f
+    )
+
+    private var uTextureHandle: Int = 0
+    private var textTextureHandle: Int = 0
+    private var switchHandle: Int = 0
+    private var maskTextureId = -1
+    var maskBitmap: Bitmap? = null
+    private var maskVertices: FloatBuffer? = null
 
     init {
-        triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices.put(halfRightVerticeData).position(0)
+        initVerticeInfo()
         Matrix.setIdentityM(sTMatrix, 0)
+    }
 
-        textTextureId = TextUtil.genTextTextureId("杜小菜6666")
+    private fun initVerticeInfo() {
+        triangleVertices = ByteBuffer.allocateDirect(videoVerticeData.size * FLOAT_SIZE_BYTES)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer()
+        triangleVertices?.put(videoVerticeData)?.position(0)
+
+        maskVertices = ByteBuffer.allocateDirect(maskVerticeData.size * FLOAT_SIZE_BYTES)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer()
+        maskVertices?.put(maskVerticeData)?.position(0)
     }
 
     override fun setScaleType(scaleType: ScaleType) {
@@ -100,11 +116,8 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (viewWidth <= 0 || viewHeight <= 0 || videoWidth <= 0 || videoHeight <= 0) {
             return
         }
-
         //halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
-        triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
-            .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices.put(halfRightVerticeData).position(0)
+        initVerticeInfo()
     }
 
     override fun setSurfaceListener(surfaceListener: IRender.SurfaceListener) {
@@ -130,27 +143,59 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         //比较典型的半透明效果，如果源色 alpha 为0，则取目标色，如果源色alpha为1，则取源色，否则视源色的alpha大小各取一部分。源色的alpha越大，则源色取的越多，最终结果源色的表现更强；源色的alpha越小，则目标色“透过”的越多。
         GLES20.glEnable(GLES20.GL_BLEND)
         //GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
-        GLES20.glBlendFunc(GLES20.GL_ONE,GLES20.GL_ZERO)
+        //GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
         // 基于源象素alpha通道值的半透明混合函数
-        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
-
+        GLES20.glBlendFuncSeparate(
+            GLES20.GL_SRC_ALPHA,
+            GLES20.GL_ONE_MINUS_SRC_ALPHA,
+            GLES20.GL_ONE,
+            GLES20.GL_ONE_MINUS_SRC_ALPHA
+        )
         GLES20.glUseProgram(programID)
-        checkGlError("glUseProgram")
+        checkGlError("glUseProgram2")
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textureID)
 
+        // 绑定mask纹理
+        if (maskTextureId == -1) {
+            maskTextureId = TextUtil.genBitmapTextureId(maskBitmap)
+        }
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, maskTextureId)
+        GLES20.glUniform1i(uTextureHandle, 1)
+        checkGlError("maskTextureId")
+        maskVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
+        GLES20.glVertexAttribPointer(
+            aPositionHandle, 3, GLES20.GL_FLOAT, false,
+            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, maskVertices
+        )
 
-        //绘制文字start，src 纹理坐标
-        srcArray.setArray(TexCoordsUtil.genSrcCoordsArray(srcArray.array, 500, 1000, 300, 500,  Src.FitType.CENTER_FULL))
-        //srcArray.setVertexAttribPointer(shader.aTextureSrcCoordinatesLocation)
-        srcArray.setVertexAttribPointer(aPositionHandle)
-        // 绑定 src纹理
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textTextureId)
-        GLES20.glUniform1i(aPositionHandle, 0)
+        //todo  文字
+        //
+        GLES20.glEnableVertexAttribArray(aPositionHandle)
+        checkGlError("aPositionHandle")
 
-        triangleVertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
+        triangleVertices?.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
+        GLES20.glVertexAttribPointer(
+            aTextureHandle, 3, GLES20.GL_FLOAT, false,
+            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
+        )
+        GLES20.glEnableVertexAttribArray(aTextureHandle)
+        checkGlError("aTextureHandle")
+
+        Matrix.setIdentityM(mVPMatrix, 0)
+        GLES20.glUniformMatrix4fv(uMVPMatrixHandle, 1, false, mVPMatrix, 0)
+        GLES20.glUniformMatrix4fv(uSTMatrixHandle, 1, false, sTMatrix, 0)
+
+        //switch
+        GLES20.glUniform1f(switchHandle, 0.0f)
+        checkGlError("switchHandle")
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+
+        //start mask
+        GLES20.glUniform1f(switchHandle, 1.0f)
+        triangleVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
             aPositionHandle, 3, GLES20.GL_FLOAT, false,
             TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
@@ -158,20 +203,6 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         checkGlError("glVertexAttribPointer maPosition")
         GLES20.glEnableVertexAttribArray(aPositionHandle)
         checkGlError("glEnableVertexAttribArray aPositionHandle")
-
-        triangleVertices.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
-        GLES20.glVertexAttribPointer(
-            aTextureHandle, 3, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
-        )
-        checkGlError("glVertexAttribPointer aTextureHandle")
-        GLES20.glEnableVertexAttribArray(aTextureHandle)
-        checkGlError("glEnableVertexAttribArray aTextureHandle")
-
-        Matrix.setIdentityM(mVPMatrix, 0)
-        GLES20.glUniformMatrix4fv(uMVPMatrixHandle, 1, false, mVPMatrix, 0)
-        GLES20.glUniformMatrix4fv(uSTMatrixHandle, 1, false, sTMatrix, 0)
-
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
 
@@ -187,6 +218,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (programID == 0) {
             return
         }
+
         aPositionHandle = GLES20.glGetAttribLocation(programID, "aPosition")
         checkGlError("glGetAttribLocation aPosition")
         if (aPositionHandle == -1) {
@@ -209,6 +241,20 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (uSTMatrixHandle == -1) {
             throw RuntimeException("Could not get attrib location for uSTMatrix")
         }
+
+        //new handle by dq
+        uTextureHandle = GLES20.glGetUniformLocation(programID, "uTexture")
+        checkGlError(" uTexture")
+        if (uTextureHandle == -1) {
+            throw RuntimeException("Could not get glGetUniformLocation uTexture")
+        }
+
+        switchHandle = GLES20.glGetUniformLocation(programID, "switchColor")
+        checkGlError("glGetUniformLocation switchHandle")
+        if (switchHandle == -1) {
+            throw RuntimeException("Could not get switchHandle")
+        }
+
         prepareSurface()
     }
 
@@ -292,18 +338,18 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     }
 
     /**
-     * create program with {@link vertex.sh} and {@link frag.sh}. If attach shader or link
+     * create program with {@link vertex.glsl} and {@link frag.glsl}. If attach shader or link
      * program, it will return 0, else return program handle
      *
      * @return programID If link program success, it will return program handle, else return 0.
      */
     private fun createProgram(): Int {
         val vertexSource = ShaderUtil.loadFromAssetsFile(
-            "vertex.sh",
+            "vertex.glsl",
             alphaVideoView.getView().resources
         )
         val fragmentSource = ShaderUtil.loadFromAssetsFile(
-            "frag.sh",
+            "frag.glsl",
             alphaVideoView.getView().resources
         )
 

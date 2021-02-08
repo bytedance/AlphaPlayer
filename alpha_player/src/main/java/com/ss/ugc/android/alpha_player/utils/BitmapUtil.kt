@@ -15,11 +15,22 @@
  */
 package com.ss.ugc.android.alpha_player.utils
 
+import android.content.Context
 import android.graphics.*
 import android.text.TextPaint
 import com.ss.ugc.android.alpha_player.model.Src
 
 object BitmapUtil {
+
+    fun createBitmap() : Bitmap {
+        return Bitmap.createBitmap(500, 500, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.BLUE)
+        }
+    }
+
+    fun createBitmapFromResId(context: Context, resId: Int): Bitmap {
+        return BitmapFactory.decodeResource(context.resources, resId)
+    }
 
     fun createEmptyBitmap() : Bitmap {
         return Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888).apply {

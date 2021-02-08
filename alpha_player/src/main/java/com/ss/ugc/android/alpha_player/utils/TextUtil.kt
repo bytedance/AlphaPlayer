@@ -1,6 +1,7 @@
 package com.ss.ugc.android.alpha_player.utils
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.opengl.GLES20
 import com.ss.ugc.android.alpha_player.model.Src
 import com.ss.ugc.android.alpha_player.model.SrcMap
@@ -45,16 +46,26 @@ object TextUtil {
     }
 
 
-    fun genTextBitmap(text: String): Bitmap {
+    private fun genTextBitmap(text: String): Bitmap {
         val genSrc: Src? = genSrc()
-        if (genSrc != null)
+        if (genSrc != null) {
+            genSrc.txt = text+text+text+text
+            genSrc.w = 500
+            genSrc.h=250
+            genSrc.style = Src.Style.BOLD
+            genSrc.color = Color.RED
             return BitmapUtil.createTxtBitmap(genSrc)
+        }
         return BitmapUtil.createEmptyBitmap()
     }
 
 
     fun genTextTextureId(text: String): Int {
         return TextureLoadUtil.loadTexture(genTextBitmap(text))
+    }
+
+    fun genBitmapTextureId(bitmap: Bitmap?): Int {
+        return TextureLoadUtil.loadTexture(bitmap)
     }
 
     fun releaseTextTexture(textureId: Int) {
