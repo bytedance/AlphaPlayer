@@ -1,18 +1,3 @@
-/*
- * Tencent is pleased to support the open source community by making vap available.
- *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
- *
- * Licensed under the MIT License (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License at
- *
- * http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.ss.ugc.android.alpha_player.mask
 
 import android.opengl.GLES11Ext
@@ -24,14 +9,10 @@ import com.ss.ugc.android.alpha_player.utils.TextUtil
 import com.ss.ugc.android.alpha_player.utils.VertexUtil
 
 /**
- * Description:单独控制，渲染蒙版
- * Created by 杜小菜 on 2021/2/8 - 17:04 .
+ * Description:渲染文字、图片蒙版，单独处理，
  * E-mail: duqian2010@gmail.com
  */
 class MaskRender() {
-    companion object {
-        private const val TAG = "dq.MaskRender"
-    }
 
     var maskShader: MaskShader? = null
     var vertexArray = GlFloatArray()
@@ -41,12 +22,11 @@ class MaskRender() {
      * shader 与 texture初始化
      */
     fun initMaskShader(edgeBlur: Boolean) {
-        // shader 初始化
         maskShader = MaskShader(edgeBlur)
         GLES20.glDisable(GLES20.GL_DEPTH_TEST) // 关闭深度测试
     }
 
-    fun renderFrame(videoTextureId: Int) {
+    fun renderFrame(videoTextureId: Int) {// TODO: 2021/2/8 内容待确定，仅供测试
         if (videoTextureId <= 0) return
         val shader = this.maskShader ?: return
 
