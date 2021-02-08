@@ -126,23 +126,39 @@ public class TextureCropUtil {
         return result;
     }
 
+    /**
+     * // X, Y, Z, U, V
+     * -1.0f, -1.0f, 0f, 0.5f, 0f,
+     * 1.0f, -1.0f, 0f, 1f, 0f,
+     * -1.0f, 1.0f, 0f, 0.5f, 1f,
+     * 1.0f, 1.0f, 0f, 1f, 1f
+     *
+     * to
+     *
+     * // X, Y, Z, U, V
+     * -1.0f, -1.0f, 0f, 0f, 0f,
+     * 1.0f, -1.0f, 0f, 1f, 0f,
+     * -1.0f, 1.0f, 0f, 0f, 1f,
+     * 1.0f, 1.0f, 0f, 1f, 1f
+
+     */
     private static float[] getZoomData(float leftZoomRatio, float topZoomRatio, float rightZoomRatio, float bottomZoomRatio) {
         return new float[] {
                 // X, Y, Z, U, V
-                -1.0f + leftZoomRatio * 2, -1.0f + bottomZoomRatio * 2, 0, 0.5f, 0.f,
-                1.0f - rightZoomRatio * 2, -1.0f + bottomZoomRatio * 2, 0, 1.f, 0.f,
-                -1.0f + leftZoomRatio * 2, 1.0f - topZoomRatio * 2, 0, 0.5f, 1.f,
-                1.0f - rightZoomRatio * 2, 1.0f - topZoomRatio * 2, 0, 1.f, 1.f,
+                -1.0f + leftZoomRatio , -1.0f + bottomZoomRatio , 0, 0f, 0f,
+                1.0f - rightZoomRatio , -1.0f + bottomZoomRatio , 0, 1f, 0f,
+                -1.0f + leftZoomRatio , 1.0f - topZoomRatio , 0,     0f, 1f,
+                1.0f - rightZoomRatio , 1.0f - topZoomRatio , 0,     1f, 1f
         };
     }
 
     private static float[] getCropData(float leftCropRatio, float topCropRatio, float rightCropRatio, float bottomCropRatio) {
         return new float[] {
                 // X, Y, Z, U, V
-                -1.0f,  -1.0f,  0, 0.5f + leftCropRatio / 2,    0.f + bottomCropRatio,
-                1.0f,   -1.0f,  0, 1.0f - rightCropRatio / 2,   0.f + bottomCropRatio,
-                -1.0f,  1.0f,   0, 0.5f + leftCropRatio / 2,    1.f - topCropRatio,
-                1.0f,   1.0f,   0, 1.0f - rightCropRatio / 2,   1.f - topCropRatio,
+                -1.0f,  -1.0f,  0, 0f + leftCropRatio / 1,    0.f + bottomCropRatio,
+                1.0f,   -1.0f,  0, 1f - rightCropRatio / 1,   0.f + bottomCropRatio,
+                -1.0f,  1.0f,   0, 0f + leftCropRatio / 1,    1.f - topCropRatio,
+                1.0f,   1.0f,   0, 1f - rightCropRatio / 1,   1.f - topCropRatio,
         };
     }
 }

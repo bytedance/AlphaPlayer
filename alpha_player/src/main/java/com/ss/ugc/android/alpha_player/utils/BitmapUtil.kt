@@ -20,6 +20,7 @@ import android.graphics.*
 import android.text.TextPaint
 import com.ss.ugc.android.alpha_player.model.Src
 
+
 object BitmapUtil {
 
     fun createBitmap() : Bitmap {
@@ -29,7 +30,9 @@ object BitmapUtil {
     }
 
     fun createBitmapFromResId(context: Context, resId: Int): Bitmap {
-        return BitmapFactory.decodeResource(context.resources, resId)
+        val options = BitmapFactory.Options()
+        options.inScaled = false // 没有预先缩放
+        return BitmapFactory.decodeResource(context.resources, resId,options)
     }
 
     fun createEmptyBitmap() : Bitmap {
