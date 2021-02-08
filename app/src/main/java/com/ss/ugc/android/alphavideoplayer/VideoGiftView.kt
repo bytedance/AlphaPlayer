@@ -124,6 +124,7 @@ class VideoGiftView @JvmOverloads constructor(
         if (!dataSource.isValid()) {
             Log.e(TAG, "startDataSource: dataSource is invalid.")
         }
+        attachView()
         mPlayerController?.start(dataSource)
     }
 

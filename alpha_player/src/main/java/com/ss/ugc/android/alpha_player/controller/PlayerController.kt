@@ -340,6 +340,7 @@ class PlayerController(
     @WorkerThread
     private fun handleSuspendedEvent() {
         suspendDataSource?.let {
+            alphaVideoView.addMaskSrcList(masks)
             prepareAsync()
         }
         suspendDataSource = null
