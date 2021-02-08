@@ -69,22 +69,14 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
     private var maskVerticeData = floatArrayOf(
         // X, Y, Z, U, V
-        -0.30f, -0.45f, 0f, 0f, 0f,
-        0.30f, -0.45f, 0f, 1f, 0f,
-        -0.30f, 0.25f, 0f, 0f, 1f,
-        0.30f, 0.25f, 0f, 1f, 1f
-    )
-
-    private var textVerticeData = floatArrayOf(
         // X, Y, Z, U, V
-        -0.30f, -0.45f, 0f, 0f, 0f,
-        0.30f, -0.45f, 0f, 1f, 0f,
-        -0.50f, 0.55f, 0f, 0f, 1f,
-        0.50f, 0.55f, 0f, 1f, 1f
+        -0.25f, -0.15f, 0f, 0f, 0f,
+        0.25f, -0.15f, 0f, 1f, 0f,
+        -0.25f, 0.15f, 0f, 0f, 1f,
+        0.25f, 0.15f, 0f, 1f, 1f
     )
 
     private var uTextureHandle: Int = 0
-    private var textTextureHandle: Int = 0
     private var switchHandle: Int = 0
     private var maskTextureId = -1
     var maskBitmap: Bitmap? = null
@@ -116,7 +108,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (viewWidth <= 0 || viewHeight <= 0 || videoWidth <= 0 || videoHeight <= 0) {
             return
         }
-        //halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
+        //videoVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
         initVerticeInfo()
     }
 
@@ -193,7 +185,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         checkGlError("switchHandle")
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
 
-        //start mask
+        //mask
         GLES20.glUniform1f(switchHandle, 1.0f)
         triangleVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
