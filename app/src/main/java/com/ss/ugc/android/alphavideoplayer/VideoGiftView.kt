@@ -121,7 +121,7 @@ class VideoGiftView @JvmOverloads constructor(
     }
 
     private fun startDataSource(dataSource: DataSource) {
-        if (!dataSource.isValid()) {
+        if (!dataSource.isValid(context.resources?.configuration?.orientation ?: android.content.res.Configuration.ORIENTATION_PORTRAIT)) {
             Log.e(TAG, "startDataSource: dataSource is invalid.")
         }
         attachView()

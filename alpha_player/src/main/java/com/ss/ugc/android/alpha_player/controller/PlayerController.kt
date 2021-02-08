@@ -226,7 +226,7 @@ class PlayerController(
 
     override fun start(dataSource: DataSource) {
         messageId = dataSource.messageId
-        if (dataSource.isValid()) {
+        if (dataSource.isValid(context.resources?.configuration?.orientation ?: android.content.res.Configuration.ORIENTATION_PORTRAIT)) {
             setVisibility(View.VISIBLE)
             sendMessage(getMessage(SET_DATA_SOURCE, dataSource))
         } else {

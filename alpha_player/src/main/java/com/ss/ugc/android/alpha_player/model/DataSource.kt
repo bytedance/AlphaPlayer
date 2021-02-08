@@ -11,7 +11,9 @@ class DataSource {
 
     private val portraitDataInfo: DataInfo = DataInfo()
     private val landscapeDataInfo: DataInfo = DataInfo()
-    private var isValid = false
+    private var isPortraitValid = false
+    private var isLandscapeValid = false
+    private var baseDir: String = ""
     var messageId: Long = 0L
     var errorInfo: String = ""
 
@@ -23,21 +25,21 @@ class DataSource {
         }
     }
 
-    fun isValid(): Boolean {
-        return isValid
+    fun isValid(orientation: Int): Boolean {
+        return if (Configuration.ORIENTATION_PORTRAIT == orientation) isPortraitValid else isLandscapeValid
     }
 
     fun setPortraitDataInfo(config: DataInfo.() -> Unit) {
         portraitDataInfo.apply {
             config()
-            isValid = checkValid()
+            isPortraitValid = checkValid()
         }
     }
 
     fun setLandscapeDataInfo(config: DataInfo.() -> Unit) {
         landscapeDataInfo.apply {
             config()
-            isValid = checkValid()
+            isLandscapeValid = checkValid()
         }
     }
 
@@ -71,5 +73,32 @@ class DataSource {
             }
         }
         return true
+    }
+
+    fun setBaseDir(baseDir: String): DataSource {
+        this.baseDir = if (baseDir.endsWith(File.separator)) baseDir else (baseDir + File.separator)
+        return this
+    }
+
+    fun setPortraitPath(portraitPath: String, portraitScaleType: Int): DataSource {
+        setPortraitDataInfo {
+            path = baseDir + portraitPath
+            setScaleType(portraitScaleType)
+        }
+        return this
+    }
+
+    fun setLandscapePath(landscapePath: String, landscapeScaleType: Int): DataSource {
+        setLandscapeDataInfo {
+            path = baseDir + landscapePath
+            setScaleType(landscapeScaleType)
+        }
+        return this
+    }
+
+    fun setLooping(isLooping: Boolean): DataSource {
+        portraitDataInfo.looping = isLooping
+        landscapeDataInfo.looping = isLooping
+        return this
     }
 }
