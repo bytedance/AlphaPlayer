@@ -27,4 +27,12 @@ abstract class AbsPlayer(context: Context? = null) : IMediaPlayer {
     override fun setOnFirstFrameListener(firstFrameListener: IMediaPlayer.OnFirstFrameListener) {
         this.firstFrameListener = firstFrameListener
     }
+
+    override fun getCurrentPosition(): Int {
+        return 0
+    }
+
+    override fun isPlaying(): Boolean {
+        return false
+    }
 }
