@@ -1,14 +1,17 @@
 package com.ss.ugc.android.alphavideoplayer
 
+import android.content.res.Configuration
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
+import android.support.constraint.ConstraintLayout
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.ss.ugc.android.alpha_player.IMonitor
 import com.ss.ugc.android.alpha_player.IPlayerAction
 import com.ss.ugc.android.alpha_player.model.ScaleType
+import com.ss.ugc.android.alpha_player.utils.SystemUtil
 import com.ss.ugc.android.alphavideoplayer.utils.PermissionUtils
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
@@ -19,12 +22,17 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private val TAG = "MainActivity"
-    val basePath = Environment.getExternalStorageDirectory().absolutePath
+    private val basePath = Environment.getExternalStorageDirectory().absolutePath
+    private var mIsLandScape = false
+    private var mScreenWidth = 0
+    private var mScreenHeigth = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        mScreenWidth = SystemUtil.getScreenWidth(this)
+        mScreenHeigth = SystemUtil.getScreenHeight(this)
         PermissionUtils.verifyStoragePermissions(this)
         initVideoGiftView()
     }
@@ -40,9 +48,17 @@ class MainActivity : AppCompatActivity() {
 
     private val playerAction = object : IPlayerAction {
         override fun onVideoSizeChanged(videoWidth: Int, videoHeight: Int, scaleType: ScaleType) {
-            Log.i(TAG,
+            Log.i(
+                TAG,
                 "call onVideoSizeChanged(), videoWidth = $videoWidth, videoHeight = $videoHeight, scaleType = $scaleType"
             )
+            mIsLandScape = SystemUtil.isLandscape(this@MainActivity)
+            if (mIsLandScape) {
+                val layoutParams = video_gift_view.layoutParams as ConstraintLayout.LayoutParams
+                layoutParams.width = mScreenWidth * (videoWidth / videoHeight) / 2
+                layoutParams.height = mScreenWidth
+                video_gift_view.requestLayout()
+            }
         }
 
         override fun startAction() {
@@ -55,8 +71,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val monitor = object : IMonitor {
-        override fun monitor(state: Boolean, playType: String, what: Int, extra: Int, errorInfo: String) {
-            Log.i(TAG,
+        override fun monitor(
+            state: Boolean,
+            playType: String,
+            what: Int,
+            extra: Int,
+            errorInfo: String
+        ) {
+            Log.i(
+                TAG,
                 "call monitor(), state: $state, playType = $playType, what = $what, extra = $extra, errorInfo = $errorInfo"
             )
         }
@@ -77,7 +100,7 @@ class MainActivity : AppCompatActivity() {
     private fun startPlayVideo() {
         val testPath = getResourcePath()
         Log.i("dzy", "play gift file path : $testPath")
-        if ("".equals(testPath)) {
+        if ("" == testPath) {
             Toast.makeText(
                 this,
                 "please run 'gift_install.sh gift/demoRes' for load alphaVideo resource.",
@@ -100,5 +123,17 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         video_gift_view.releasePlayerController()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+        mIsLandScape = newConfig?.orientation == Configuration.ORIENTATION_LANDSCAPE
+        Log.i("dq-alpha", "onConfigurationChanged")
+        if (mIsLandScape) {
+            val layoutParams = video_gift_view.layoutParams as ConstraintLayout.LayoutParams
+            layoutParams.width = 750 / 2
+            layoutParams.height = 750
+            video_gift_view.requestLayout()
+        }
     }
 }

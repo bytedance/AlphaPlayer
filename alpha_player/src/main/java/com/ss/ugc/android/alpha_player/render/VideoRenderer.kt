@@ -164,8 +164,8 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             TRIANGLE_VERTICES_DATA_STRIDE_BYTES, maskVertices
         )
 
-        GLES20.glEnableVertexAttribArray(aPositionHandle)
-        checkGlError("aPositionHandle")
+        /*GLES20.glEnableVertexAttribArray(aPositionHandle)
+        checkGlError("aPositionHandle")*/
 
         triangleVertices?.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
         GLES20.glVertexAttribPointer(
@@ -201,6 +201,8 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
         //todo-dq  任意位置添加文字 fix bug
         //mMaskRender?.renderFrame(textureID)
+        GLES20.glDisable(GLES20.GL_BLEND)
+
     }
 
     override fun onSurfaceChanged(glUnused: GL10, width: Int, height: Int) {
