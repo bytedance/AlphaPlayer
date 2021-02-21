@@ -46,7 +46,7 @@ class VideoGiftView @JvmOverloads constructor(
     fun initPlayerController(context: Context, owner: LifecycleOwner, playerAction: IPlayerAction, monitor: IMonitor) {
         val configuration = Configuration(context, owner)
 
-        configuration.bitmap = BitmapUtil.createBitmapFromResId(context, R.mipmap.avator)
+        configuration.bitmap = BitmapUtil.createBitmapFromResId(context, R.mipmap.dq_avator)
         //  GLTextureView supports custom display layer, but GLSurfaceView has better performance, and the GLSurfaceView is default.
         configuration.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
         //  You can implement your IMediaPlayer, here we use ExoPlayerImpl that implemented by ExoPlayer, and

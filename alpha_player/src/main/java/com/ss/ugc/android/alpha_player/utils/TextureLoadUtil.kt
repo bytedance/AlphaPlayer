@@ -46,11 +46,14 @@ object TextureLoadUtil {
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+
+        //fixed by dq:回收位图，已加载到OpenGL中
+        bitmap.recycle();
         return textureObjectIds[0]
     }
     
     
-    fun releaseTexure(textureId: Int) {
+    fun releaseTexture(textureId: Int) {
         if (textureId != 0) {
             GLES20.glDeleteTextures(1, intArrayOf(textureId), 0)
         }

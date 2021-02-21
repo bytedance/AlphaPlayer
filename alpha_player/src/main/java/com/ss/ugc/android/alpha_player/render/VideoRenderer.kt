@@ -7,6 +7,7 @@ import android.opengl.Matrix
 import android.os.Build
 import android.util.Log
 import android.view.Surface
+import com.ss.ugc.android.alpha_player.mask.MaskRender
 import com.ss.ugc.android.alpha_player.model.ScaleType
 import com.ss.ugc.android.alpha_player.utils.*
 import com.ss.ugc.android.alpha_player.widget.IAlphaVideoView
@@ -69,22 +70,13 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
     private var maskVerticeData = floatArrayOf(
         // X, Y, Z, U, V
-        -0.30f, -0.45f, 0f, 0f, 0f,
-        0.30f, -0.45f, 0f, 1f, 0f,
-        -0.30f, 0.25f, 0f, 0f, 1f,
-        0.30f, 0.25f, 0f, 1f, 1f
-    )
-
-    private var textVerticeData = floatArrayOf(
-        // X, Y, Z, U, V
-        -0.30f, -0.45f, 0f, 0f, 0f,
-        0.30f, -0.45f, 0f, 1f, 0f,
-        -0.50f, 0.55f, 0f, 0f, 1f,
-        0.50f, 0.55f, 0f, 1f, 1f
+        -0.25f, -0.15f, 0f, 0f, 0f,
+        0.25f, -0.15f, 0f, 1f, 0f,
+        -0.25f, 0.15f, 0f, 0f, 1f,
+        0.25f, 0.15f, 0f, 1f, 1f
     )
 
     private var uTextureHandle: Int = 0
-    private var textTextureHandle: Int = 0
     private var switchHandle: Int = 0
     private var maskTextureId = -1
     var maskBitmap: Bitmap? = null
@@ -116,7 +108,8 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         if (viewWidth <= 0 || viewHeight <= 0 || videoWidth <= 0 || videoHeight <= 0) {
             return
         }
-        //halfRightVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
+        // TODO-dq: 2021/2/8  处理横屏的视频显示，坐标要调整
+        //videoVerticeData = TextureCropUtil.calculateHalfRightVerticeData(scaleType, viewWidth, viewHeight, videoWidth, videoHeight)
         initVerticeInfo()
     }
 
@@ -140,7 +133,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             GLES20.glFinish()
             return
         }
-        //比较典型的半透明效果，如果源色 alpha 为0，则取目标色，如果源色alpha为1，则取源色，否则视源色的alpha大小各取一部分。源色的alpha越大，则源色取的越多，最终结果源色的表现更强；源色的alpha越小，则目标色“透过”的越多。
+        //半透明效果，alpha为0取目标色，alpha为1，则取源色，否则视源色的alpha大小各取一部分。
         GLES20.glEnable(GLES20.GL_BLEND)
         //GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
         //GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
@@ -171,20 +164,16 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             TRIANGLE_VERTICES_DATA_STRIDE_BYTES, maskVertices
         )
 
-        //todo  文字
-        //
-        checkGlError("glVertexAttribPointer maPosition")
-        GLES20.glEnableVertexAttribArray(aPositionHandle)
-        checkGlError("glEnableVertexAttribArray aPositionHandle")
+        /*GLES20.glEnableVertexAttribArray(aPositionHandle)
+        checkGlError("aPositionHandle")*/
 
         triangleVertices?.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
         GLES20.glVertexAttribPointer(
             aTextureHandle, 3, GLES20.GL_FLOAT, false,
             TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
         )
-        checkGlError("glVertexAttribPointer aTextureHandle")
         GLES20.glEnableVertexAttribArray(aTextureHandle)
-        checkGlError("glEnableVertexAttribArray aTextureHandle")
+        checkGlError("aTextureHandle")
 
         Matrix.setIdentityM(mVPMatrix, 0)
         GLES20.glUniformMatrix4fv(uMVPMatrixHandle, 1, false, mVPMatrix, 0)
@@ -195,7 +184,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         checkGlError("switchHandle")
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
 
-        //start mask
+        //mask
         GLES20.glUniform1f(switchHandle, 1.0f)
         triangleVertices?.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
@@ -208,7 +197,12 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
 
-        GLES20.glFinish()
+        //GLES20.glFinish()
+
+        //todo-dq  任意位置添加文字 fix bug
+        //mMaskRender?.renderFrame(textureID)
+        GLES20.glDisable(GLES20.GL_BLEND)
+
     }
 
     override fun onSurfaceChanged(glUnused: GL10, width: Int, height: Int) {
@@ -258,7 +252,12 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         }
 
         prepareSurface()
+
+        mMaskRender = MaskRender()
+        mMaskRender?.initMaskShader(true)
     }
+
+    private var mMaskRender: MaskRender? = null
 
     override fun onSurfaceDestroyed(gl: GL10?) {
         surfaceListener?.onSurfaceDestroyed()
@@ -346,11 +345,11 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
      * @return programID If link program success, it will return program handle, else return 0.
      */
     private fun createProgram(): Int {
-        val vertexSource = ShaderUtil.loadFromAssetsFile(
+        val vertexSource = ShaderUtils.loadFromAssetsFile(
             "vertex.glsl",
             alphaVideoView.getView().resources
         )
-        val fragmentSource = ShaderUtil.loadFromAssetsFile(
+        val fragmentSource = ShaderUtils.loadFromAssetsFile(
             "frag.glsl",
             alphaVideoView.getView().resources
         )
