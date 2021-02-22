@@ -51,8 +51,8 @@ object TextUtil {
         val genSrc: Src? = genSrc()
         if (genSrc != null) {
             genSrc.txt = text + text + text + text
-            genSrc.w = 200
-            genSrc.h = 100
+            genSrc.w = 300
+            genSrc.h = 300
             genSrc.style = Src.Style.BOLD
             genSrc.color = Color.RED
             return BitmapUtil.createTxtBitmap(genSrc)

@@ -38,6 +38,12 @@ class MaskRender() {
             1080,
             1920
         )
+        val maskRect = PointRect(
+            0,
+            0,
+            1000,
+            1000
+        )
         // 顶点坐标
         vertexArray.setArray(
             VertexUtil.create(
@@ -54,15 +60,15 @@ class MaskRender() {
         if (maskTexId > 0) {
             maskArray.setArray(
                 TexCoordsUtil.create(
-                    1080,
-                    1920,
-                    maskPositionRect,
-                    vertexArray.array
+                    1000,
+                    1000,
+                    maskRect,
+                    maskArray.array
                 )
             )
             maskArray.setVertexAttribPointer(shader.aTextureMaskCoordinatesLocation)
             // 绑定alpha纹理
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE2)
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, maskTexId)
             GLES20.glTexParameterf(
                 GLES20.GL_TEXTURE_2D,
@@ -84,7 +90,7 @@ class MaskRender() {
                 GLES20.GL_TEXTURE_WRAP_T,
                 GLES20.GL_CLAMP_TO_EDGE
             )
-            GLES20.glUniform1i(shader.uTextureMaskUnitLocation, 0)
+            GLES20.glUniform1i(shader.uTextureMaskUnitLocation, 2)
 
             GLES20.glEnable(GLES20.GL_BLEND)
             // 基于源象素alpha通道值的半透明混合函数

@@ -196,13 +196,10 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         checkGlError("glEnableVertexAttribArray aPositionHandle")
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
-
-        //GLES20.glFinish()
-
-        //todo-dq  任意位置添加文字 fix bug
-        //mMaskRender?.renderFrame(textureID)
         GLES20.glDisable(GLES20.GL_BLEND)
 
+        //todo-dq  任意位置添加文字,单独处理
+        //mMaskRender?.renderFrame(textureID)
     }
 
     override fun onSurfaceChanged(glUnused: GL10, width: Int, height: Int) {
@@ -216,45 +213,38 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         }
 
         aPositionHandle = GLES20.glGetAttribLocation(programID, "aPosition")
-        checkGlError("glGetAttribLocation aPosition")
         if (aPositionHandle == -1) {
             throw RuntimeException("Could not get attrib location for aPosition")
         }
         aTextureHandle = GLES20.glGetAttribLocation(programID, "aTextureCoord")
-        checkGlError("glGetAttribLocation aTextureCoord")
         if (aTextureHandle == -1) {
             throw RuntimeException("Could not get attrib location for aTextureCoord")
         }
 
         uMVPMatrixHandle = GLES20.glGetUniformLocation(programID, "uMVPMatrix")
-        checkGlError("glGetUniformLocation uMVPMatrix")
         if (uMVPMatrixHandle == -1) {
             throw RuntimeException("Could not get attrib location for uMVPMatrix")
         }
 
         uSTMatrixHandle = GLES20.glGetUniformLocation(programID, "uSTMatrix")
-        checkGlError("glGetUniformLocation uSTMatrix")
         if (uSTMatrixHandle == -1) {
             throw RuntimeException("Could not get attrib location for uSTMatrix")
         }
 
         //new handle by dq
         uTextureHandle = GLES20.glGetUniformLocation(programID, "uTexture")
-        checkGlError(" uTexture")
         if (uTextureHandle == -1) {
             throw RuntimeException("Could not get glGetUniformLocation uTexture")
         }
 
         switchHandle = GLES20.glGetUniformLocation(programID, "switchColor")
-        checkGlError("glGetUniformLocation switchHandle")
         if (switchHandle == -1) {
             throw RuntimeException("Could not get switchHandle")
         }
-
         prepareSurface()
 
         mMaskRender = MaskRender()
-        mMaskRender?.initMaskShader(true)
+        mMaskRender?.initMaskShader(false)
     }
 
     private var mMaskRender: MaskRender? = null
