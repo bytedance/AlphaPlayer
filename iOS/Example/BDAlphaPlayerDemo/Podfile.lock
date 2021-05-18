@@ -1,0 +1,16 @@
+PODS:
+  - BDAlphaPlayer (1.1.0)
+
+DEPENDENCIES:
+  - BDAlphaPlayer (from `../../../`)
+
+EXTERNAL SOURCES:
+  BDAlphaPlayer:
+    :path: "../../../"
+
+SPEC CHECKSUMS:
+  BDAlphaPlayer: 6ec0535dbbac6b089e94acb5559dcdf77dd1d5a8
+
+PODFILE CHECKSUM: a2a7c83a00e25dc193359c91e412457a63e7fbad
+
+COCOAPODS: 1.8.4
