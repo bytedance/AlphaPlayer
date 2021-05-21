@@ -63,11 +63,8 @@ Webp相比PNG和JPEG格式体积可以减少25%，在移动端的平台支持上
 
 ### 基本原理
 
-<<<<<<< HEAD
 主要有两个核心，一个是IMediaPlayer，负责视频解码，支持外部自行实现；另一个是VideoRenderer，负责将解析出来的每一帧画面进行透明度混合，再输出到GLTextureView或者GLSurfaceView上。
 
-=======
->>>>>>> develop
 大致的混合过程可以看下图示例
 
 <img src="./image/introduction.png" alt="introduction" style="zoom:75%;" />
