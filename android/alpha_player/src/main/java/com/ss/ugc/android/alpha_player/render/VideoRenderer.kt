@@ -44,7 +44,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         1.0f, 1.0f, 0f, 1f, 1f
     )
 
-    private var triangleVertices: FloatBuffer? = null
+    private var triangleVertices: FloatBuffer
 
     private val mVPMatrix = FloatArray(16)
     private val sTMatrix = FloatArray(16)
@@ -65,14 +65,14 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     private val canDraw = AtomicBoolean(false)
     private val updateSurface = AtomicBoolean(false)
 
-    private var surfaceTexture: SurfaceTexture? = null
+    private lateinit var surfaceTexture: SurfaceTexture
     private var surfaceListener: IRender.SurfaceListener? = null
     private var scaleType = ScaleType.ScaleAspectFill
 
     init {
         triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices!!.put(halfRightVerticeData).position(0)
+        triangleVertices.put(halfRightVerticeData).position(0)
         Matrix.setIdentityM(sTMatrix, 0)
     }
 
@@ -91,7 +91,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
             viewWidth, viewHeight, videoWidth, videoHeight)
         triangleVertices = ByteBuffer.allocateDirect(halfRightVerticeData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder()).asFloatBuffer()
-        triangleVertices!!.put(halfRightVerticeData).position(0)
+        triangleVertices.put(halfRightVerticeData).position(0)
     }
 
     override fun setSurfaceListener(surfaceListener: IRender.SurfaceListener) {
@@ -101,11 +101,11 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
     override fun onDrawFrame(glUnused: GL10) {
         if (updateSurface.compareAndSet(true, false)) {
             try {
-                surfaceTexture!!.updateTexImage()
+                surfaceTexture.updateTexImage()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            surfaceTexture!!.getTransformMatrix(sTMatrix)
+            surfaceTexture.getTransformMatrix(sTMatrix)
         }
 
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
@@ -123,7 +123,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textureID)
 
-        triangleVertices!!.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
+        triangleVertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
         GLES20.glVertexAttribPointer(
             aPositionHandle, 3, GLES20.GL_FLOAT, false,
             TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
@@ -132,7 +132,7 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
         GLES20.glEnableVertexAttribArray(aPositionHandle)
         checkGlError("glEnableVertexAttribArray aPositionHandle")
 
-        triangleVertices!!.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
+        triangleVertices.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
         GLES20.glVertexAttribPointer(
             aTextureHandle, 3, GLES20.GL_FLOAT, false,
             TRIANGLE_VERTICES_DATA_STRIDE_BYTES, triangleVertices
@@ -208,17 +208,15 @@ class VideoRenderer(val alphaVideoView: IAlphaVideoView) : IRender {
 
         surfaceTexture = SurfaceTexture(textureID)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
-            surfaceTexture!!.setDefaultBufferSize(
+            surfaceTexture.setDefaultBufferSize(
                 alphaVideoView.getMeasuredWidth(),
                 alphaVideoView.getMeasuredHeight()
             )
         }
-        surfaceTexture!!.setOnFrameAvailableListener(this)
+        surfaceTexture.setOnFrameAvailableListener(this)
 
         val surface = Surface(this.surfaceTexture)
-        if (surfaceListener != null) {
-            surfaceListener!!.onSurfacePrepared(surface)
-        }
+        surfaceListener?.onSurfacePrepared(surface)
         updateSurface.compareAndSet(true, false)
     }
 

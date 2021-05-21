@@ -63,6 +63,8 @@ Webp相比PNG和JPEG格式体积可以减少25%，在移动端的平台支持上
 
 ### 基本原理
 
+主要有两个核心，一个是IMediaPlayer，负责视频解码，支持外部自行实现；另一个是VideoRenderer，负责将解析出来的每一帧画面进行透明度混合，再输出到GLTextureView或者GLSurfaceView上。
+
 大致的混合过程可以看下图示例
 
 <img src="./image/introduction.png" alt="introduction" style="zoom:75%;" />
@@ -208,6 +210,27 @@ val playerController = PlayerController.get(config, DefaultSystemPlayer())
 #### Alpha通道压缩方案
 
 为了进一步减少视频动画文件的体积，我们做了很多方向的尝试，包括透明画面像素点冗余channel的复用和整体尺寸压缩，可以期待后续更新。
+
+### GLSurfaceView & GLTextureView
+
+SurfaceView和TextureView都是用来显示视频画面的，主要差异在于性能和层级，SurfaceView的性能要优于TextureView，但是层级限制在最顶层，TextureView则没有层级限制。可以通过如下方式指定alphaVideoViewType来设置。
+
+```kotlin
+val config = Configuration(context, lifecycleOwner)
+// 支持GLSurfaceView&GLTextureView, 默认使用GLSurfaceView
+config.alphaVideoViewType = AlphaVideoViewType.GL_TEXTURE_VIEW
+val playerController = PlayerController.get(config, DefaultSystemPlayer())
+```
+
+### 素材制作工具
+
+素材制作的方式有两种：
+
+一种是直接使用AE导出成品素材，大致流程就是后期在AE上完成动画效果后，分离出Alpha通道视频，然后在同一个AE合成里左边带Alpha通道后边带正常动画，一起渲染导出。如果还是不理解，还是让设计师去代劳吧，专业的人做专业的事。
+
+第二种方式，在AE上完成动画后期效果后，直接输出视频序列帧，然后使用我们提供的素材制作脚本 `convertAlphaVideo.py` 进行处理也可以直接得出成品素材视频，脚本的大致原理如下：
+
+<img src="./image/tools.png" alt="tools" style="zoom:70%;" />
 
 ### 素材制作工具
 

@@ -38,7 +38,7 @@ class AlphaVideoGLSurfaceView @JvmOverloads constructor(context: Context, attr: 
             mSurface?.release()
             mSurface = surface
             isSurfaceCreated = true
-            mPlayerController?.setSurface(surface)
+            mPlayerController?.surfacePrepared(surface)
             mPlayerController?.resume()
         }
 
