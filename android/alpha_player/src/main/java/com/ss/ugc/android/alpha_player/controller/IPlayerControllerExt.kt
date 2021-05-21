@@ -7,5 +7,5 @@ import android.view.Surface
  */
 interface IPlayerControllerExt : IPlayerController {
 
-    fun setSurface(surface: Surface)
+    fun surfacePrepared(surface: Surface)
 }

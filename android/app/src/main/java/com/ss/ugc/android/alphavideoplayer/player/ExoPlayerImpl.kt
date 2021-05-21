@@ -24,7 +24,7 @@ import com.ss.ugc.android.alpha_player.player.AbsPlayer
  */
 class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
 
-    private var exoPlayer: SimpleExoPlayer? = null
+    private lateinit var exoPlayer: SimpleExoPlayer
     private val dataSourceFactory: DefaultDataSourceFactory
     private var videoSource: MediaSource? = null
 
@@ -34,18 +34,18 @@ class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
 
     private val exoPlayerListener: Player.EventListener = object: Player.EventListener {
         override fun onPlayerError(error: ExoPlaybackException?) {
-            errorListener.onError(0, 0, "ExoPlayer on error: " + Log.getStackTraceString(error))
+            errorListener?.onError(0, 0, "ExoPlayer on error: " + Log.getStackTraceString(error))
         }
 
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
             when (playbackState) {
                 Player.STATE_READY -> {
                     if (playWhenReady) {
-                        preparedListener.onPrepared()
+                        preparedListener?.onPrepared()
                     }
                 }
                 Player.STATE_ENDED -> {
-                    completionListener.onCompletion()
+                    completionListener?.onCompletion()
                 }
                 else -> {}
             }
@@ -59,7 +59,7 @@ class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
         }
 
         override fun onRenderedFirstFrame() {
-            firstFrameListener.onFirstFrame()
+            firstFrameListener?.onFirstFrame()
         }
     }
 
@@ -70,12 +70,12 @@ class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
 
     override fun initMediaPlayer() {
         exoPlayer = ExoPlayerFactory.newSimpleInstance(context)
-        exoPlayer!!.addListener(exoPlayerListener)
-        exoPlayer!!.addVideoListener(exoVideoListener)
+        exoPlayer.addListener(exoPlayerListener)
+        exoPlayer.addVideoListener(exoVideoListener)
     }
 
     override fun setSurface(surface: Surface) {
-        exoPlayer!!.setVideoSurface(surface)
+        exoPlayer.setVideoSurface(surface)
     }
 
     override fun setDataSource(dataPath: String) {
@@ -91,28 +91,28 @@ class ExoPlayerImpl(private val context: Context) : AbsPlayer(context) {
     }
 
     override fun prepareAsync() {
-        exoPlayer!!.prepare(videoSource)
-        exoPlayer!!.playWhenReady = true
+        exoPlayer.prepare(videoSource)
+        exoPlayer.playWhenReady = true
     }
 
     override fun start() {
-        exoPlayer!!.playWhenReady = true
+        exoPlayer.playWhenReady = true
     }
 
     override fun pause() {
-        exoPlayer!!.playWhenReady = false
+        exoPlayer.playWhenReady = false
     }
 
     override fun stop() {
-        exoPlayer!!.stop()
+        exoPlayer.stop()
     }
 
     override fun reset() {
-        exoPlayer!!.stop(true)
+        exoPlayer.stop(true)
     }
 
     override fun release() {
-        exoPlayer!!.release()
+        exoPlayer.release()
     }
 
     override fun setLooping(looping: Boolean) {
