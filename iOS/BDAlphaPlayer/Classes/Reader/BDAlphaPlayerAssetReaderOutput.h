@@ -31,6 +31,8 @@ typedef NS_ENUM(NSUInteger, BDAlphaPlayerAssetReaderOutputErrorCode) {
 
 @property (nonatomic, assign, readonly) CGSize videoSize;
 
+@property (nonatomic, strong, readonly) AVPlayerItem *audioItem;
+
 - (BOOL)hasNextSampleBuffer;
 
 - (CMSampleBufferRef const _Nullable)copyNextSampleBuffer;

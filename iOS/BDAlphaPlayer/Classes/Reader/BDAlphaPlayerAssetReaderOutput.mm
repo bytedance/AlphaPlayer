@@ -106,6 +106,14 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
         return;
     }
     
+    // 提取音轨
+    NSArray *audioTracks = [asset tracksWithMediaType:AVMediaTypeAudio];
+    AVAssetTrack *audioTrack = [audioTracks firstObject];
+    if (audioTrack) {
+        // 存在音轨，转成AVPlayerItem
+        _audioItem = [AVPlayerItem playerItemWithAsset:audioTrack.asset];
+    }
+    
     NSArray *videoTracks = [asset tracksWithMediaType:AVMediaTypeVideo];
     AVAssetTrack *videoTrack = [videoTracks firstObject];
     if (!videoTrack) {

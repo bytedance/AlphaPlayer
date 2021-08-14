@@ -29,6 +29,8 @@
 
 @property (atomic, assign) BOOL hasDestroyed;
 
+@property (nonatomic, strong) AVPlayer *audioPlayer;
+
 @end
 
 @implementation BDAlphaPlayerMetalView
@@ -141,6 +143,16 @@
     [self renderOutput:output resourceModel:self.model completion:^{
         [weakSelf renderCompletion];
     }];
+    
+    // 播放音频
+    if (output.audioItem) {
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        [session setCategory:AVAudioSessionCategoryPlayback error:nil];
+        [session setActive:YES error:nil];
+        
+        self.audioPlayer = [[AVPlayer alloc] initWithPlayerItem:output.audioItem];
+        [self.audioPlayer play];
+    }
 }
 
 - (void)renderCompletion
