@@ -21,8 +21,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
-    [super viewDidLoad];
     
     self.startBtn = [[UIButton alloc] initWithFrame:CGRectMake(100, 100, 60, 60)];
     self.startBtn.backgroundColor = [UIColor orangeColor];
@@ -41,10 +39,9 @@
 {
     if (!self.metalView) {
         self.metalView = [[BDAlphaPlayerMetalView alloc] initWithDelegate:self];
+        self.metalView.userInteractionEnabled = true;
         [self.view insertSubview:self.metalView atIndex:0];
     }
-    self.startBtn.hidden = YES;
-    self.stopBtn.alpha = 0.3;
     
     BDAlphaPlayerMetalConfiguration *configuration = [BDAlphaPlayerMetalConfiguration defaultConfiguration];
     NSString *testResourcePath = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"TestResource"];
@@ -68,8 +65,6 @@
     if (error) {
         NSLog(@"%@", error.localizedDescription);
     }
-    self.startBtn.hidden = NO;
-    self.stopBtn.alpha = 1;
 }
 
 @end

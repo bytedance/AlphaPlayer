@@ -82,13 +82,17 @@
 
 - (void)stop
 {
-    [self destroyMTKView];
+    if (self.mtkView) {
+        [self destroyMTKView];
+    }
 }
 
 - (void)stopWithFinishPlayingCallback
 {
-    [self stop];
-    [self renderCompletion];
+    if (self.mtkView) {
+        [self destroyMTKView];
+        [self renderCompletion];
+    }
 }
 
 #pragma mark - Private Method
@@ -113,6 +117,10 @@
 
 - (void)play
 {
+    if (self.mtkView) {
+        [self destroyMTKView];
+    }
+    
     NSURL *url = [self.model.currentOrientationResourceInfo resourceFileURL];
     NSError *error = nil;
     BDAlphaPlayerAssetReaderOutput *output = [[BDAlphaPlayerAssetReaderOutput alloc] initWithURL:url error:&error];
@@ -175,6 +183,8 @@
     [self.mtkView releaseDrawables];
     [self.metalRenderer drainSampleBufferQueue];
     self.mtkView = nil;
+    self.metalRenderer = nil;
+    self.output = nil;
     self.hasDestroyed = YES;
 }
 

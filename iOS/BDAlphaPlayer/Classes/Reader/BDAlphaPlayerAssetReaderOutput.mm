@@ -25,6 +25,8 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
 
 @property (nonatomic, strong) NSObject *bufferQueueToken;
 
+@property (nonatomic, assign) BOOL isDrained;
+
 @end
 
 @implementation BDAlphaPlayerAssetReaderOutput
@@ -34,6 +36,7 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
     if (AVAssetReaderStatusReading == self.reader.status) {
         [self.reader cancelReading];
     }
+    [self drainSampleBufferQueue];
 }
 
 - (instancetype)initWithURL:(NSURL *)url error:(NSError * _Nullable __autoreleasing * _Nullable)outError
@@ -57,6 +60,7 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
                 _sampleBufferQueue.pop();
             }
         }
+        self.isDrained = true;
     }
 }
 
@@ -72,6 +76,12 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
             CMSampleBufferRef const next = [self.output copyNextSampleBuffer];
             if (next) {
                 @synchronized (self.bufferQueueToken) {
+                    if (self.isDrained) {
+                        // 多线程调用时，有可能在执行完drainSampleBufferQueue方法后，仍然会进入到这里，从而引起内存泄露
+                        // 判断如果drainSampleBufferQueue已经执行完，则添加拦截，并释放掉nextSampleBuffer
+                        CFRelease(next);
+                        break;
+                    }
                     self->_sampleBufferQueue.push(next);
                     if (self->_sampleBufferQueue.size() >= KBufferCapacity) {
                         break;
