@@ -232,16 +232,6 @@ val playerController = PlayerController.get(config, DefaultSystemPlayer())
 
 <img src="./image/tools.png" alt="tools" style="zoom:70%;" />
 
-### 素材制作工具
-
-素材制作的方式有两种：
-
-一种是直接使用AE导出成品素材，大致流程就是后期在AE上完成动画效果后，分离出Alpha通道视频，然后在同一个AE合成里左边带Alpha通道后边带正常动画，一起渲染导出。如果还是不理解，还是让设计师去代劳吧，专业的人做专业的事。
-
-第二种方式，在AE上完成动画后期效果后，直接输出视频序列帧，然后使用我们提供的素材制作脚本 `convertAlphaVideo.py` 进行处理也可以直接得出成品素材视频，脚本的大致原理如下：
-
-<img src="./image/tools.png" alt="tools" style="zoom:70%;" />
-
 可以看到通道分离和画面拼接是基于ffmpeg和ImageMagick两套工具实现的，所以运行前需要先配置ffmpeg和ImageMagick的环境。
 
 执行下面命令，等待成品素材生成。
