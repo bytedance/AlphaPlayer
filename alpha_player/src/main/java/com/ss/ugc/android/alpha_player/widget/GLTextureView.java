@@ -1104,7 +1104,7 @@ public class GLTextureView
                 Log.e("EglHelper", "throwEglException tid=" + Thread.currentThread().getId() + " "
                         + message);
             }
-            throw new RuntimeException(message);
+//            throw new RuntimeException(message);
         }
 
         public static void logEglErrorAsWarning(String tag, String function, int error) {
