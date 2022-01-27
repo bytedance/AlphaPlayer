@@ -31,6 +31,7 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
 
 - (void)dealloc
 {
+    [self drainSampleBufferQueue];
     if (AVAssetReaderStatusReading == self.reader.status) {
         [self.reader cancelReading];
     }
