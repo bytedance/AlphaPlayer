@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
 
   spec.name         = "BDAlphaPlayer"
-  spec.version      = "1.2.2"
+  spec.version      = "1.2.3"
   spec.summary      = "A player for MP4 with alpha channel."
 
   spec.homepage     = "https://github.com/bytedance/AlphaPlayer/blob/master/README.md"
